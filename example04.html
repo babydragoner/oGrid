@@ -1,0 +1,40 @@
+﻿<HTML>
+<HEAD>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <TITLE> oGrid load data</TITLE>
+    <script type="text/javascript" src="./oGrid.js"></script>
+    <link type="text/css" rel="stylesheet" href="oGrid.css" />
+    <SCRIPT language="javascript">
+        var obj;
+        window.onload = function () {
+            obj = new obj4u.oGrid(dataTable);
+            obj.loadUrl = 'http://obj4u.com/samples/getJSON2.php';
+            //obj.reloadPage = false; // when this page only view data can use this function.
+            obj.load();
+            obj.renderData();
+            obj.event.AddEvent("onLog", showLog);
+            obj.event.AddEvent("onSelectedRow", oGrid_SelectedRow);
+        }
+
+        function oGrid_SelectedRow(rowElement, row)
+        {
+        	var selectedRows = obj.getSelectRows();
+        	alert(rowElement.rowIndex+ "," + row.index + " , " + selectedRows.length + "," + row["Id"]);
+        }
+
+        function showLog(msg)
+        {
+        	alert(msg);
+        }
+
+    </SCRIPT>
+</HEAD>
+<BODY>
+
+    <TABLE id="dataTable">
+
+    </TABLE>
+ 
+</BODY>
+</HTML>

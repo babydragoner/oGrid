@@ -1,0 +1,63 @@
+
+.oGrid td, th{border:1px solid #cccccc; color:#555555;text-align:center;line-height:28px;}
+.oGrid .headerrow{ background-color:#bbefef;}
+.oGrid .headerrow td 
+{
+    color:#ffffff; text-align:center;
+}
+.oGrid .selected{background-color:#ebffaa;}
+
+.oGrid .datarowodd{background-color:#ffffff;}
+.oGrid .dataroweven{ background-color:#efefef;}
+.oGrid .datarowodd:hover, .dataroweven:hover {
+	background-color: #3d80df;
+}
+
+.oGrid div.pagination ul {
+    list-style: none;
+    padding: 0px;
+    line-height: 0px;
+}
+
+.oGrid div.pagination li {
+    display: inline;
+}
+
+.oGrid div.pagination {
+    overflow: hidden;
+    font-size: 9pt;
+	padding:0px;
+	margin:3px;
+	text-align:center;
+}
+
+.oGrid div.pagination li.normal {
+	padding: 2px 5px 2px 5px;
+	margin-right: 2px;
+	border: 1px solid #9aafe5;
+
+	text-decoration: none;
+	color: #2e6ab1;
+}
+
+.oGrid div.pagination li.normal:hover, div.pagination li.normal:active {
+	border: 1px solid #2b66a5;
+	color: #000;
+	background-color: lightyellow;
+}
+
+.oGrid div.pagination li.current {
+	padding: 2px 5px 2px 5px;
+	margin-right: 2px;
+	border: 1px solid navy;
+	font-weight: bold;
+	background-color: #2e6ab1;
+	color: #FFF;
+}
+
+.oGrid div.pagination li.disabled {
+	padding: 2px 5px 2px 5px;
+	margin-right: 2px;
+	border: 1px solid #929292;
+	color: #929292;
+}
