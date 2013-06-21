@@ -95,7 +95,7 @@ function oGrid(fcontainer, params) {
                 //if ( type.toLowerCase() == "script" )
                 //jQuery.globalEval( data );
 
-                data = this.onLoadSuccess(data, type);
+                data = obj.onLoadSuccess(data, type);
                 // Get the JavaScript object, if JSON is used.
                 if (type.toLowerCase() == "json")
                     data = eval("(" + data + ")");
