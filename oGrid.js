@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.4.3
+* oGrid for pure javascript -  v0.4.4
 *
 * Copyright (c) 2013 watson chen (code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -101,8 +101,6 @@ function oGrid(fcontainer, params) {
                     data = eval("(" + data + ")");
 
                 obj.loadData(data);
-                //return data;
-                //alert("test" + xmlhttp.response);
             }
         }
 
@@ -133,6 +131,14 @@ function oGrid(fcontainer, params) {
         return col;
     }
     this.updateColumn = function (col) {
+        if (!col) {
+            this.onLog("col is empty.");
+            return;
+        }
+        if (!col.field) {
+            this.onLog("col.field is empty.");
+            return;
+        }
         for (var i = 0; i < this.columns.length; ++i) {
             if (this.columns[i].field == col.field) {
                 this.columns[i] = col;
@@ -341,7 +347,8 @@ function oGrid(fcontainer, params) {
     }
     this.renderCell = function (rowElement, row, col) {
         var cell = this.insertCell(rowElement);
-        cell.width = col.width;
+        if(col.width)
+            cell.width = col.width;
 
         if (row.edit) {
             if (col.editor) {
@@ -352,6 +359,10 @@ function oGrid(fcontainer, params) {
                 }
             }
         } else {
+            if (!col.field) {
+                this.onLog("col.field is empty.");
+                return;
+            }
             cell.innerHTML = "&nbsp;" + row[col.field];
         }
         return cell;
