@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<HTML>
+<HEAD>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <TITLE>dynamic hidden or show column</TITLE>
+    <script type="text/javascript" src="./oGrid.js"></script>
+    <link type="text/css" rel="stylesheet" href="oGrid.css" />
+    <SCRIPT language="javascript">
+        var rawData = {
+            "rows": [
+            { "productid": "FI-SW-01", "unitcost": 10.00, "status": "P", "listprice": 36.50, "attr1": "Large", "itemid": "EST-1" },
+            { "productid": "K9-DL-01", "unitcost": 12.00, "status": "P", "listprice": 18.50, "attr1": "Spotted Adult Female", "itemid": "EST-10" },
+            { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 28.50, "attr1": "Venomless", "itemid": "EST-11" },
+            { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 26.50, "attr1": "Rattleless", "itemid": "EST-12" },
+            { "productid": "RP-LI-02", "unitcost": 12.00, "status": "P", "listprice": 35.50, "attr1": "Green Adult", "itemid": "EST-13" },
+            { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 158.50, "attr1": "Tailless", "itemid": "EST-14" },
+            { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 83.50, "attr1": "With tail", "itemid": "EST-15" },
+            { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 63.50, "attr1": "Adult Female", "itemid": "EST-16" },
+            { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 89.50, "attr1": "Adult Male", "itemid": "EST-17" },
+            { "productid": "AV-CB-01", "unitcost": 92.00, "status": "P", "listprice": 63.50, "attr1": "Adult Male", "itemid": "EST-18" }
+            ]
+        };
+
+        var obj;
+        window.onload = function () {
+            obj = new obj4u.oGrid(dataTable);
+            obj.event.AddEvent("onLog", oGrid_Log);
+            obj.loadData(rawData);
+            obj.addRows(rawData.rows);
+            show_hidden_column();
+            obj.renderData();
+        }
+
+        function oGrid_Log(msg) {
+            alert(msg);
+        }
+
+        function show_hidden_column() {
+            //var col = obj.getColumn("productid2"); // <-- this is will show log message (column was not found)
+            var col = obj.getColumn("productid");
+            if (col) {
+                if (col.hidden) {
+                    btnSH.value = "hidden";
+                } else {
+                    btnSH.value = "show";
+                }
+                col.hidden = !col.hidden;
+                obj.renderData();
+            }
+        }
+    </SCRIPT>
+</HEAD>
+<BODY>
+	<input type="button" id="btnSH" value="show" onclick="show_hidden_column();">
+	<p>
+    <TABLE id="dataTable">
+
+    </TABLE>
+ 
+</BODY>
+</HTML>
