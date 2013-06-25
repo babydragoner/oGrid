@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.4.4
+* oGrid for pure javascript -  v0.4.6
 *
 * Copyright (c) 2013 watson chen (code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -37,6 +37,10 @@ function oGrid(fcontainer, params) {
             this.onLog("jsonData is empty.");
             return;
         }
+        if (!jsonData.rows) {
+            this.onLog("jsonData rows is empty.");
+            return;
+        }
         if (jsonData.rows.length <= 0) {
             this.onLog("jsonData length <= 0.");
             return;
@@ -46,6 +50,10 @@ function oGrid(fcontainer, params) {
             this.totalRow = jsonData.total;
         else
             this.totalRow = jsonData.rows.length;
+
+        if (jsonData.columns) {
+            this.columns = jsonData.columns;
+        }
 
         if (this.columns.length <= 0) {
             for (var p in jsonData.rows[0]) {
@@ -59,7 +67,10 @@ function oGrid(fcontainer, params) {
         var last = start + this.pageSize;
         if (last > start + jsonData.rows.length)
             last = start + jsonData.rows.length;
-
+        if (start == 0) {
+            last = jsonData.rows.length;
+        }
+        
         var z = 0;
         for (var i = start; i < last; ++i) {
             var oldRow = this.rows[i];
@@ -116,18 +127,41 @@ function oGrid(fcontainer, params) {
         xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         xmlhttp.send(qry);
     }
-    this.load = function (queryParams) {
+    this.load = function (type, queryParams) {
         if (!this.loadUrl) {
             this.onLog("loadUrl is empty.");
             return;
         }
 
-        var furl = this.loadUrl + "?type=data";
+        var furl = this.loadUrl;
+        if (type) {
+            furl = furl + "?type=" + type;
+        } else {
+            furl = furl + "?type=init";
+        }
 
         obj.loadFromUrl(furl, 'json', false, null, queryParams);
     }
     this.addColumn = function (col) {
         this.columns[this.columns.length] = col;
+        return col;
+    }
+    this.getColumn = function (field) {
+        var col = null;
+        if (!field) {
+            this.onLog("field is empty.");
+            return col;
+        }
+        for (var i = 0; i < this.columns.length; ++i) {
+            if (this.columns[i].field == field) {
+                col = this.columns[i];
+                break;
+            }
+        }
+        if (!col) {
+            this.onLog(field +" column was ont found.");
+            return col;
+        }
         return col;
     }
     this.updateColumn = function (col) {
@@ -176,13 +210,15 @@ function oGrid(fcontainer, params) {
         var params = {};
         params.page = this.pageNumber;
         params.rows = this.pageSize;
-        if (!this.reloadPage) {
-            var start = this.pageNumber * this.pageSize;
-            if (!this.rows[start]) {
-                this.load(params);
-            }
-        } else
-            this.load(params);
+        if (this.loadUrl) {
+            if (!this.reloadPage) {
+                var start = this.pageNumber * this.pageSize;
+                if (!this.rows[start]) {
+                    this.load("data", params);
+                }
+            } else
+                this.load("data", params);
+        }
 
         this.renderData();
     }
@@ -257,6 +293,9 @@ function oGrid(fcontainer, params) {
         var thead = document.createElement("thead");
         thead.className = "headerrow";
         for (var i = 0; i < this.columns.length; ++i) {
+            if (this.columns[i].hidden) {
+                continue;
+            }
             var th = document.createElement("th");
             th.innerHTML = "&nbsp;" + this.columns[i].title;
             thead.appendChild(th);
@@ -346,6 +385,9 @@ function oGrid(fcontainer, params) {
         }
     }
     this.renderCell = function (rowElement, row, col) {
+        if (col.hidden) {
+            return;
+        }
         var cell = this.insertCell(rowElement);
         if(col.width)
             cell.width = col.width;
