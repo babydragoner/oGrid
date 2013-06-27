@@ -10,6 +10,13 @@
 	    .oGrid {border:0px;border-collapse:collapse;}
 	    .oGrid tr {border-bottom:0px solid #000; }
 		.oGrid td, th{border:0px;}
+		.oGrid hr {
+			background-color: #FFE424;
+			color: #FFE424;
+			height: 1px;
+			border: 0px;
+			clear: both;
+		}
 	</style>
 
     <SCRIPT language="javascript">
@@ -29,7 +36,7 @@
         };
 
     var params = {
-        "columns": [{ "field": "productid", "title": "product id" }, { "field": "itemid", "title": "item id"}]
+        "columns": [{ "field": "productid", "title": "product id", "width": 100 }, { "field": "itemid", "title": "item id", "width": 300}]
         };
         function myList2(fcontainer) {
             this.base = obj4u.oGrid;
@@ -40,11 +47,10 @@
                 oldrenderRow.call(this, rowElement, row);
 
                 rowElement = this.container.insertRow(this.container.rows.length);
-                cell = rowElement.insertCell();
+                cell = rowElement.insertCell(0);
                 cell.setAttribute("colspan", this.columns.length);
-                var img = document.createElement("img");
-                img.setAttribute("src", "line.gif");
-                cell.appendChild(img);
+                var hr = document.createElement("hr");
+                cell.appendChild(hr);
             }
         };
         var obj;
@@ -63,7 +69,6 @@
 <BODY>
 
     <TABLE id="dataTable">
-
     </TABLE>
  
 </BODY>
