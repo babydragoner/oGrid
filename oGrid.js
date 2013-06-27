@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.4.6
+* oGrid for pure javascript -  v0.4.7
 *
 * Copyright (c) 2013 watson chen (code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -57,10 +57,12 @@ function oGrid(fcontainer, params) {
 
         if (this.columns.length <= 0) {
             for (var p in jsonData.rows[0]) {
-                var col = this.getDefaultColumn();
-                col.field = p;
-                col.title = p;
-                this.addColumn(col);
+                if (p != "rowStyle" && p != "cellStyle") {
+                    var col = this.getDefaultColumn();
+                    col.field = p;
+                    col.title = p;
+                    this.addColumn(col);
+                }
             }
         }
         var start = this.pageNumber * this.pageSize;
@@ -376,6 +378,13 @@ function oGrid(fcontainer, params) {
             this.onLog("row is empty.");
             return;
         }
+        if (row.rowStyle) {
+            if (row.rowStyle.className) {
+                rowElement.className = row.rowStyle.className;
+            } else {
+                rowElement.setAttribute("style", row.rowStyle.style);
+            }
+        }
         if (row.selected) {
             rowElement.oldClassName = rowElement.className;
             rowElement.className = "selected";
@@ -392,12 +401,14 @@ function oGrid(fcontainer, params) {
         if(col.width)
             cell.width = col.width;
 
+        var colValue = row[col.field];
+
         if (row.edit) {
             if (col.editor) {
                 var editor = new col.editor;
                 if (editor.init) {
                     editor.init(cell, "");
-                    editor.setValue(row[col.field]);
+                    editor.setValue(colValue);
                 }
             }
         } else {
@@ -405,9 +416,28 @@ function oGrid(fcontainer, params) {
                 this.onLog("col.field is empty.");
                 return;
             }
-            cell.innerHTML = "&nbsp;" + row[col.field];
+            cell.field = col.field;
+            cell.innerHTML = "&nbsp;" + colValue;
+            if (row.cellStyle) {
+                if (!row.cellStyle.length) {
+                    this.setCellStyle(cell, row.cellStyle);
+                } else {
+                    for (var i = 0; i < row.cellStyle.length; ++i) {
+                        this.setCellStyle(cell, row.cellStyle[i]);
+                    }
+                }
+            }
         }
         return cell;
+    }
+    this.setCellStyle = function (cell, cellStyle) {
+        if (cell.field == cellStyle.field) {
+            if (cellStyle.className) {
+                cell.className = cellStyle.className;
+            } else {
+                cell.setAttribute("style", cellStyle.style);
+            }
+        }
     }
 
     this.selectRow = function (rowElement) {
