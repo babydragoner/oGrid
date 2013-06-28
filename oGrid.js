@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.4.7
+* oGrid for pure javascript -  v0.4.8
 *
 * Copyright (c) 2013 watson chen (code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -16,6 +16,7 @@ function oGrid(fcontainer, params) {
     this.columns = [];
     this.loadUrl;
     this.reloadPage = true;
+    this.showNavigation = true;
 
     this.totalPage;
     this.pageNames = ['First', 'Previous', 'Next', 'Last']
@@ -269,12 +270,18 @@ function oGrid(fcontainer, params) {
     }
     this.renderData = function () {
         this.container.innerHTML = "";
+        if (!this.showNavigation) {
+            this.pageSize = this.totalRow;
+        }
+
         this.totalPage = Math.ceil(this.totalRow / this.pageSize);
         if (this.pageNumber > this.totalPage || this.pageNumber < 0)
             this.pageNumber = 0;
 
-        var rowElement = this.container.insertRow(this.container.rows.length);
-        this.renderNavigationHead(rowElement);
+        if (this.showNavigation) {
+            var rowElement = this.insertRowElement(false);
+            this.renderNavigationHead(rowElement);
+        }
         this.renderRowHead();
         var start = this.pageNumber * this.pageSize;
         var last = start + this.pageSize;
@@ -282,13 +289,16 @@ function oGrid(fcontainer, params) {
             last = this.totalRow;
 
         for (var i = start; i < last; ++i) {
-            rowElement = this.insertRowElement();
+            rowElement = this.insertRowElement(true);
             var row = this.rows[i];
             rowElement.dataIndex = i;
             this.renderRow(rowElement, row);
         }
-        rowElement = this.container.insertRow(this.container.rows.length);
-        this.renderNavigationFooter(rowElement);
+
+        if (this.showNavigation) {
+            rowElement = this.insertRowElement(false);
+            this.renderNavigationFooter(rowElement);
+        }
     }
 
     this.renderRowHead = function () {
@@ -451,19 +461,22 @@ function oGrid(fcontainer, params) {
             this.rows[i].selected = false;
             rowElement.className = rowElement.oldClassName;
         }
+        this.onClickedRow(rowElement, this.rows[i]);
     }
-    this.insertRowElement = function () {
+    this.insertRowElement = function (isNormal) {
         var rowElement = this.container.insertRow(this.container.rows.length);
-        var obj = this;
-        rowElement.addEventListener("click",
-                         function () {
-                             obj.selectRow(this);
-                         },
-                         false);
-        if (rowElement.rowIndex % 2 == 1)
-            rowElement.className = "datarowodd";
-        else
-            rowElement.className = "dataroweven";
+        if (isNormal) {
+            var obj = this;
+            rowElement.addEventListener("click",
+                             function () {
+                                 obj.selectRow(this);
+                             },
+                             false);
+            if (rowElement.rowIndex % 2 == 1)
+                rowElement.className = "datarowodd";
+            else
+                rowElement.className = "dataroweven";
+        }
         return rowElement;
     }
     this.insertCell = function (rowElement) {
@@ -475,6 +488,8 @@ function oGrid(fcontainer, params) {
     }
     this.onLoadSuccess = function (data, type) {
         return data;
+    }
+    this.onClickedRow = function (rowElement, row) {
     }
     this.onSelectedRow = function (rowElement, row) {
     }
