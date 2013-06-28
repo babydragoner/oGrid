@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<HTML>
+<HEAD>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <TITLE>change style to unordered lists</TITLE>
+    <script type="text/javascript" src="./oGrid.js"></script>
+    <link type="text/css" rel="stylesheet" href="oGrid.css" />
+	<style type="text/css">
+	    .oGrid {border:0px;border-collapse:collapse;width:300px;}
+        .oGrid .selected{background-color:#ffffff;}
+        .oGrid li {
+            line-height: 30px;
+        }
+        .slide{
+            width:300px;
+            background: #FdffaF;
+            max-height: 0;
+            overflow: hidden;
+    -webkit-transition: max-height 1.5s;
+       -moz-transition: max-height 1.5s;
+         -o-transition: max-height 1.5s;
+            transition: max-height 1.5s;
+        }
+	</style>
+
+    <SCRIPT language="javascript">
+        var rawData = {
+            "rows": [
+                { "productid": "FI-SW-01", "unitcost": 10.00, "status": "P", "listprice": 36.50, "attr1": "Large", "itemid": "EST-1" },
+                { "productid": "K9-DL-01", "unitcost": 12.00, "status": "P", "listprice": 18.50, "attr1": "Spotted Adult Female", "itemid": "EST-10" },
+                { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 28.50, "attr1": "Venomless", "itemid": "EST-11" },
+                { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 26.50, "attr1": "Rattleless", "itemid": "EST-12" },
+                { "productid": "RP-LI-02", "unitcost": 12.00, "status": "P", "listprice": 35.50, "attr1": "Green Adult", "itemid": "EST-13" },
+                { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 158.50, "attr1": "Tailless", "itemid": "EST-14" },
+                { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 83.50, "attr1": "With tail", "itemid": "EST-15" },
+                { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 63.50, "attr1": "Adult Female", "itemid": "EST-16" },
+                { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 89.50, "attr1": "Adult Male", "itemid": "EST-17" },
+                { "productid": "AV-CB-01", "unitcost": 92.00, "status": "P", "listprice": 63.50, "attr1": "Adult Male", "itemid": "EST-18" }
+            ]
+        };
+
+        function myList2(fcontainer, params) {
+            this.base = obj4u.oGrid;
+            this.base(fcontainer, params);
+
+            this.renderRowHead = function () {
+                // not need head
+            }
+
+            this.renderRow = function (rowElement, row) {
+                var primaryKey = this.columns[0].field;
+                rowElement.innerHTML = row[primaryKey] + "<br>";
+                var content;
+                for (var i = 1; i < this.columns.length; ++i) {
+                    if (content)
+                        content += " - ";
+                    else
+                        content = "";
+
+                    content += row[this.columns[i].field];
+                }
+                var div = document.createElement("div");
+                div.id = "div" + row.index;
+                div.innerHTML = content + "<br>";
+                div.className = "slide";
+                rowElement.appendChild(div);
+            }
+            this.insertRowElement = function (isNormal) {
+                var li = document.createElement("li");
+                this.container.appendChild(li);
+                if (isNormal) {
+                    var obj = this;
+                    li.addEventListener("click",
+                                     function () {
+                                         obj.selectRow(this);
+                                     },
+                                     false);
+                }
+                return li;
+            }
+        };
+        var obj;
+        window.onload = function () {
+            obj = new myList2(dataList);
+            obj.showNavigation = false;
+            obj.loadData(rawData);
+            obj.renderData();
+            obj.event.AddEvent("onClickedRow", oGrid_ClickedRow);
+        }
+
+        function oGrid_ClickedRow(rowElement, row) {
+            var primaryKey = obj.columns[0].field;
+            var div = rowElement.querySelector("#div" + row.index);
+            if (div.hadShow) {
+                div.setAttribute("style", "max-height: 0px;");
+                div.hadShow = false;
+            }
+            else {
+                div.hadShow = true;
+                div.setAttribute("style", "max-height: 200px;");
+            }
+        }
+    </SCRIPT>
+</HEAD>
+<BODY>
+
+    <ul id="dataList">
+    </ul>
+ 
+</BODY>
+</HTML>
