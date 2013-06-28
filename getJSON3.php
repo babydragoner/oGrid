@@ -35,7 +35,7 @@ class cellStyle
 	public $className;
 	public $style;
 }
-$type = $_GET["type"];;
+$type = $_GET["type"];
 $page = isset($_POST['page']) ? intval($_POST['page']) : 0; 
 $rows = isset($_POST['rows']) ? intval($_POST['rows']) : 10; 
 
