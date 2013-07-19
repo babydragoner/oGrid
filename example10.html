@@ -1,0 +1,139 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<HTML>
+<HEAD>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <TITLE>Enable oGrid Inline Editing</TITLE>
+    <script type="text/javascript" src="./oGrid.js"></script>
+    <link type="text/css" rel="stylesheet" href="oGrid.css" />
+
+    <SCRIPT language="javascript">
+        var rawData = {
+            "columns": [
+                { "field": "productid", "title": "product id", "width": 100, "editor":"text" },
+                { "field": "itemid", "title": "item id", "width": 300, "editor": "text" }],
+            "rows": [
+                { "productid": "FI-SW-01", "unitcost": 10.00, "status": "P", "listprice": 36.50, "attr1": "Large", "itemid": "EST-1" },
+                { "productid": "K9-DL-01", "unitcost": 12.00, "status": "P", "listprice": 18.50, "attr1": "Spotted Adult Female", "itemid": "EST-10" },
+                { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 28.50, "attr1": "Venomless", "itemid": "EST-11" },
+                { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 26.50, "attr1": "Rattleless", "itemid": "EST-12" },
+                { "productid": "RP-LI-02", "unitcost": 12.00, "status": "P", "listprice": 35.50, "attr1": "Green Adult", "itemid": "EST-13" },
+                { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 158.50, "attr1": "Tailless", "itemid": "EST-14" },
+                { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 83.50, "attr1": "With tail", "itemid": "EST-15" },
+                { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 63.50, "attr1": "Adult Female", "itemid": "EST-16" },
+                { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 89.50, "attr1": "Adult Male", "itemid": "EST-17" },
+                { "productid": "AV-CB-01", "unitcost": 92.00, "status": "P", "listprice": 63.50, "attr1": "Adult Male", "itemid": "EST-18" }
+            ]
+        };
+
+        var obj;
+        window.onload = function () {
+            obj = new obj4u.oGrid(dataTable);
+            obj.editors.text = text;
+            obj.event.AddEvent("onDblClickedRow", oGrid_DblClickedRow);
+            obj.multiSelect = false;
+            obj.loadData(rawData);
+            obj.renderData();
+        }
+        function oGrid_DblClickedRow(rowElement, row) {
+            if (!row.edit) {
+                obj.editRow(row.index, true);
+            } else {
+                obj.editRow(row.index, false);
+            }
+            acceptChanges(row);
+        }
+
+        function text() {
+            this.init = function (container, options) {
+                var input = document.createElement("input");
+                input.type = 'text';
+                input.size = 10;
+                container.appendChild(input);
+                return input;
+            }
+            this.getValue = function (target) {
+                return target.value;
+            }
+            this.setValue = function (target, value) {
+                target.value = value;
+            }
+            this.resize = function (target, width) {
+                target.width = width;
+            }
+        }
+
+        function acceptChanges(row) {
+            if (row.edit) {
+                btnEdit.value = "cancel";
+                btnApply.disabled = false;
+                btnInsert.disabled = true;
+                btnRemove.disabled = true;
+            } else {
+                btnEdit.value = "edit";
+                btnApply.disabled = true;
+                btnInsert.disabled = false;
+                btnRemove.disabled = false;
+            }
+        }
+
+        function edit() {
+            if (obj.lastSelectedItem) {
+                var dataIndex = obj.lastSelectedIndex;
+                var row = obj.rows[dataIndex];
+                if (!row.edit) {
+                    obj.editRow(dataIndex, true);
+                } else {
+                    obj.editRow(dataIndex, false);
+                }
+                acceptChanges(row);
+            } else {
+                alert("please select row.");
+            }
+        }
+
+        function apply() {
+            if (obj.lastSelectedItem) {
+                var dataIndex = obj.lastSelectedIndex;
+                var row = obj.rows[dataIndex];
+                var rowElement = obj.lastSelectedItem;
+                if (row.edit) {
+                    obj.acceptChanges(dataIndex);
+                    acceptChanges(row);
+                } else {
+                    alert("please edit row.");
+                }
+            } else {
+                alert("please select row.");
+            }
+        }
+
+        function insertRow() {
+            var row = obj.insertRow();
+            obj.renderData();
+            obj.editRow(0, true);
+            acceptChanges(row);
+        }
+
+        function removeRow() {
+            if (obj.lastSelectedItem) {
+                var dataIndex = obj.lastSelectedIndex;
+                obj.removeRow(dataIndex);
+                obj.renderData();
+            } else {
+                alert("please select row.");
+            }
+        }
+
+    </SCRIPT>
+</HEAD>
+<BODY>
+    <input type="button" id="btnEdit" value="edit" onclick="edit();">
+    <input type="button" id="btnApply" value="apply" disabled=true onclick="apply();">
+    <input type="button" id="btnInsert" value="insert" onclick="insertRow();">
+    <input type="button" id="btnRemove" value="remove" onclick="removeRow();">
+    <table id="dataTable">
+    </table>
+ 
+</BODY>
+</HTML>

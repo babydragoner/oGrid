@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.4.8
+* oGrid for pure javascript -  v0.5
 *
 * Copyright (c) 2013 watson chen (code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -8,22 +8,30 @@
 var obj4u = obj4u || {};
 obj4u.oGrid = oGrid;
 obj4u.EventContorller = EventContorller;
+obj4u.Clone = Clone;
+obj4u.HadValue = HadValue;
 function oGrid(fcontainer, params) {
     this.container = fcontainer;
-    this.container.className = "oGrid";
     this.totalRow;
     this.rows = [];
     this.columns = [];
+    this.editors = {};
     this.loadUrl;
     this.reloadPage = true;
     this.showNavigation = true;
-
+    this.multiSelect = true;
+    this.lastSelectedItem;
+    this.lastSelectedIndex;
     this.totalPage;
     this.pageNames = ['First', 'Previous', 'Next', 'Last']
     this.pageNumber = 0;
     this.pageSize = 10;
-    this.event = new EventContorller(this);
+    this.event = new obj4u.EventContorller(this);
 
+    if (!this.container.className) {
+        this.container.className = "oGrid";
+    }
+    
     if (params) {
         if (params.loadUrl) {
             this.loadUrl = params.loadUrl;
@@ -77,7 +85,8 @@ function oGrid(fcontainer, params) {
         var z = 0;
         for (var i = start; i < last; ++i) {
             var oldRow = this.rows[i];
-            this.rows[i] = jsonData.rows[z];
+            //this.rows[i] = jsonData.rows[z];
+            this.setRow(jsonData.rows[z], i);
             this.rows[i].index = i;
             if (oldRow) {
                 this.rows[i].selected = oldRow.selected;
@@ -188,14 +197,22 @@ function oGrid(fcontainer, params) {
     this.addRows = function (rowData) {
         if (typeof rowData == 'object') {
             if (!rowData.length) {
-                this.rows[this.rows.length] = rowData;
+                this.setRow(rowData);
                 this.totalRow++;
             } else {
                 for (var i = 0; i < rowData.length; ++i) {
-                    this.rows[this.rows.length] = rowData[i];
+                    this.setRow(rowData[i]);
                     this.totalRow++;
                 }
             }
+        }
+    }
+    this.setRow = function (rowData, dataIndex) {
+        if (typeof rowData == 'object') {
+            if (!dataIndex)
+                dataIndex = this.rows.length;
+            this.rows[dataIndex] = obj4u.Clone(rowData);
+            this.rows[dataIndex].origin = obj4u.Clone(rowData);
         }
     }
 
@@ -226,9 +243,42 @@ function oGrid(fcontainer, params) {
         this.renderData();
     }
 
-    this.editRow = function (rowIndex, isEdit) {
-        if (rowIndex) {
-            this.rows[rowIndex].edit = isEdit;
+    this.editRow = function (dataIndex, isEdit) {
+        if (obj4u.HadValue(dataIndex)) {
+            var rowElement = document.getElementById("row" + dataIndex);
+            var row = this.rows[dataIndex];
+            if (isEdit) {
+                if (!row.edit) {
+                    if (!row.selected) {
+                        this.selectRow(rowElement);
+                    }
+                    row.edit = true;
+                    if (rowElement) {
+                        this.renderRow(rowElement, row);
+                    }
+                }
+            } else {
+                row.edit = false;
+                if (rowElement) {
+                    this.unselectedRow(rowElement, row);
+                    this.renderRow(rowElement, row);
+                }
+                //this.onAfterEdit(row);
+            }            
+        }
+    }
+    this.acceptChanges = function (dataIndex) {
+        if (obj4u.HadValue(dataIndex)) {
+            var rowElement = document.getElementById("row" + dataIndex);
+            var row = this.rows[dataIndex];
+            for (var i in rowElement.children) {
+                var cell = rowElement.children[i];
+                if (cell.editor) {
+                    var val = cell.editor.getValue(cell.editor.control);
+                    row[cell.field] = val;
+                }
+            }
+            this.editRow(dataIndex, false);
         }
     }
     this.getSelectRows = function () {
@@ -255,18 +305,29 @@ function oGrid(fcontainer, params) {
         col.editor = null;
         return col;
     }
-
-    this.removeRow = function (rowIndex) {
-        if (rowIndex) {
-            this.rows.splice(rowIndex, 1);
-            this.totalRow--;
+    this.getBlankRow = function () {
+        var obj = this.rows[0];
+        var temp = obj.constructor();
+        for (var key in obj) {
+            if (typeof (obj[key]) == 'boolean')
+                temp[key] = false;
+            else if (typeof (obj[key]) == 'number')
+                temp[key] = 0;
+            else
+                temp[key] = '';
         }
+        return temp;
     }
-    this.insertRow = function (rowIndex, row) {
-        if (rowIndex) {
-            this.rows.splice(rowIndex, 0, row);
-            this.totalRow++;
+    this.insertRow = function (dataIndex, row) {
+        if (!obj4u.HadValue(dataIndex))
+            rowIndex = 0;
+        if (!row) {
+            row = this.getBlankRow();
         }
+        this.rows.splice(dataIndex, 0, row);
+        this.totalRow++;
+        this.resetRowIndex();
+        return row;
     }
     this.renderData = function () {
         this.container.innerHTML = "";
@@ -291,6 +352,7 @@ function oGrid(fcontainer, params) {
         for (var i = start; i < last; ++i) {
             rowElement = this.insertRowElement(true);
             var row = this.rows[i];
+            rowElement.id = "row"+i;
             rowElement.dataIndex = i;
             this.renderRow(rowElement, row);
         }
@@ -395,10 +457,10 @@ function oGrid(fcontainer, params) {
                 rowElement.setAttribute("style", row.rowStyle.style);
             }
         }
-        if (row.selected) {
-            rowElement.oldClassName = rowElement.className;
-            rowElement.className = "selected";
+        if (row.selected && rowElement.className != "selected") {
+            this.setSelectedRow(rowElement, row);
         }
+        rowElement.innerHTML = "";
         for (var i = 0; i < this.columns.length; ++i) {
             this.renderCell(rowElement, row, this.columns[i]);
         }
@@ -408,25 +470,34 @@ function oGrid(fcontainer, params) {
             return;
         }
         var cell = this.insertCell(rowElement);
+        if (!col.field) {
+            this.onLog("col.field is empty.");
+            return;
+        }
+        cell.field = col.field;
+
+        cell.id = rowElement.id + cell.field;
         if(col.width)
             cell.width = col.width;
 
         var colValue = row[col.field];
 
-        if (row.edit) {
+        if (row.edit && row.selected) {
             if (col.editor) {
-                var editor = new col.editor;
-                if (editor.init) {
-                    editor.init(cell, "");
-                    editor.setValue(colValue);
+                //var editor = this.editors[col.editor];
+                var editor = new this.editors[col.editor];
+                if (editor) {
+                    if (editor.init) {
+                        editor.control = editor.init(cell, "");
+                        editor.setValue(editor.control, colValue);
+                        cell.editor = editor;
+                    }
                 }
+
             }
         } else {
-            if (!col.field) {
-                this.onLog("col.field is empty.");
-                return;
-            }
-            cell.field = col.field;
+            if (!colValue)
+                colValue = '';
             cell.innerHTML = "&nbsp;" + colValue;
             if (row.cellStyle) {
                 if (!row.cellStyle.length) {
@@ -440,6 +511,18 @@ function oGrid(fcontainer, params) {
         }
         return cell;
     }
+    this.removeRow = function (dataIndex) {
+        if (obj4u.HadValue(dataIndex)) {
+            this.rows.splice(dataIndex, 1);
+            this.totalRow--;
+            this.resetRowIndex();
+        }
+    }
+    this.resetRowIndex = function () {
+        for (var i = 0; i < this.rows.length; ++i) {
+            this.rows[i].index = i;
+        }
+    }
     this.setCellStyle = function (cell, cellStyle) {
         if (cell.field == cellStyle.field) {
             if (cellStyle.className) {
@@ -450,26 +533,61 @@ function oGrid(fcontainer, params) {
         }
     }
 
-    this.selectRow = function (rowElement) {
+    this.selectRow = function (rowElement, type) {
         var i = rowElement.dataIndex;
         if (!this.rows[i].selected) {
-            this.rows[i].selected = true;
-            rowElement.oldClassName = rowElement.className;
-            rowElement.className = "selected";
-            this.onSelectedRow(rowElement, this.rows[i]);
+            var flag = true;
+            if (this.lastSelectedItem && !this.multiSelect) {
+                flag = !this.rows[this.lastSelectedItem.dataIndex].edit;
+                this.unselectedRow(this.lastSelectedItem, this.rows[this.lastSelectedItem.dataIndex]);
+            }
+            if (flag) {
+                //this.lastSelectedItem = rowElement;
+                //this.lastSelectedIndex = i;
+                //this.rows[i].selected = true;
+                //rowElement.oldClassName = rowElement.className;
+                //rowElement.className = "selected";
+                this.setSelectedRow(rowElement, this.rows[i]);
+                if(type)
+                    this.onSelectedRow(rowElement, this.rows[i]);
+            }
         } else {
-            this.rows[i].selected = false;
-            rowElement.className = rowElement.oldClassName;
+            this.unselectedRow(rowElement, this.rows[i]);
         }
-        this.onClickedRow(rowElement, this.rows[i]);
+        if(type == "click")
+            this.onClickedRow(rowElement, this.rows[i]);
+        else if (type == "dblclick")
+            this.onDblClickedRow(rowElement, this.rows[i]);
     }
+    this.setSelectedRow = function (rowElement, row) {
+        this.lastSelectedItem = rowElement;
+        this.lastSelectedIndex = row.index;
+        row.selected = true;
+        rowElement.oldClassName = rowElement.className;
+        rowElement.className = "selected";
+    }
+    this.unselectedRow = function (rowElement, row) {
+        if (!row.edit) {
+            this.lastSelectedItem = null;
+            this.lastSelectedIndex = null;
+            row.selected = false;
+            if(rowElement)
+                rowElement.className = rowElement.oldClassName;
+        }
+    }
+
     this.insertRowElement = function (isNormal) {
         var rowElement = this.container.insertRow(this.container.rows.length);
         if (isNormal) {
             var obj = this;
             rowElement.addEventListener("click",
                              function () {
-                                 obj.selectRow(this);
+                                 obj.selectRow(this, "click");
+                             },
+                             false);
+            rowElement.addEventListener("dblclick",
+                             function () {
+                                 obj.selectRow(this, "dblclick");
                              },
                              false);
             if (rowElement.rowIndex % 2 == 1)
@@ -484,17 +602,22 @@ function oGrid(fcontainer, params) {
         return cellElement;
     }
 
+    this.onAfterEdit = function (row, oriRow) {
+    }
     this.onLog = function (msg) {
     }
     this.onLoadSuccess = function (data, type) {
         return data;
     }
+    this.onDblClickedRow = function (rowElement, row) {
+    }
     this.onClickedRow = function (rowElement, row) {
     }
     this.onSelectedRow = function (rowElement, row) {
     }
+    this.onUnselectedRow = function (rowElement, row) {
+    }
 };
-
 
 function EventContorller(fcontrol) {
     var control = fcontrol;
@@ -510,4 +633,22 @@ function EventContorller(fcontrol) {
         if (event)
             control[eventName] = function (){};
     }
+}
+
+function Clone(obj) {
+    if (obj == null || typeof (obj) != 'object')
+        return obj;
+
+    var temp = obj.constructor(); // changed
+
+    for (var key in obj)
+        temp[key] = Clone(obj[key]);
+    return temp;
+}
+
+function HadValue(obj) {
+    if (obj == null || typeof (obj) == 'undefined')
+        return false;
+    else
+        return true;
 }
