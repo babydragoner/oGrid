@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.5
+* oGrid for pure javascript -  v0.5.1
 *
 * Copyright (c) 2013 watson chen (code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -39,6 +39,183 @@ function oGrid(fcontainer, params) {
         if (params.columns) {
             this.columns = params.columns;
         }
+    }
+
+    this.addColumn = function (col) {
+        this.columns[this.columns.length] = col;
+        return col;
+    }
+    this.addRows = function (rowData) {
+        if (typeof rowData == 'object') {
+            if (!rowData.length) {
+                this.setRow(rowData);
+                this.totalRow++;
+            } else {
+                for (var i = 0; i < rowData.length; ++i) {
+                    this.setRow(rowData[i]);
+                    this.totalRow++;
+                }
+            }
+        }
+    }
+    function addPageCilckEvent(obj, control, pageNum) {
+        control.addEventListener("click",
+                         function () {
+                             obj.changePageNumber(pageNum);
+                         },
+                         false);
+    }
+    this.acceptChanges = function (dataIndex) {
+        if (obj4u.HadValue(dataIndex)) {
+            var rowElement = document.getElementById("row" + dataIndex);
+            var row = this.rows[dataIndex];
+            for (var i in rowElement.children) {
+                var cell = rowElement.children[i];
+                if (cell.editor) {
+                    var val = cell.editor.getValue(cell.editor.control);
+                    row[cell.field] = val;
+                }
+            }
+            this.editRow(dataIndex, false);
+        }
+    }
+
+    this.changePageNumber = function (pageNum) {
+        if (pageNum > this.totalPage)
+            pageNum = 0;
+        this.pageNumber = pageNum;
+        var params = {};
+        params.page = this.pageNumber;
+        params.rows = this.pageSize;
+        if (this.loadUrl) {
+            if (!this.reloadPage) {
+                var start = this.pageNumber * this.pageSize;
+                if (!this.rows[start]) {
+                    this.load("data", params);
+                }
+            } else
+                this.load("data", params);
+        }
+
+        this.renderData();
+    }
+
+    this.editRow = function (dataIndex, isEdit) {
+        if (obj4u.HadValue(dataIndex)) {
+            var rowElement = document.getElementById("row" + dataIndex);
+            var row = this.rows[dataIndex];
+            if (isEdit) {
+                if (!row.edit) {
+                    if (!row.selected) {
+                        this.selectRow(rowElement);
+                    }
+                    row.edit = true;
+                    if (rowElement) {
+                        this.renderRow(rowElement, row);
+                    }
+                }
+            } else {
+                row.edit = false;
+                if (rowElement) {
+                    this.unselectedRow(rowElement, row);
+                    this.renderRow(rowElement, row);
+                }
+                //this.onAfterEdit(row);
+            }            
+        }
+    }
+
+    this.getColumn = function (field) {
+        var col = null;
+        if (!field) {
+            this.onLog("field is empty.");
+            return col;
+        }
+        for (var i = 0; i < this.columns.length; ++i) {
+            if (this.columns[i].field == field) {
+                col = this.columns[i];
+                break;
+            }
+        }
+        if (!col) {
+            this.onLog(field + " column was ont found.");
+            return col;
+        }
+        return col;
+    }
+    this.getSelectRows = function () {
+        var selectRows = [];
+        for (var i = 0; i < this.rows.length; ++i) {
+            if (this.rows[i].selected) {
+                selectRows[selectRows.length] = this.rows[i];
+            }
+        }
+        return selectRows;
+    }
+    this.getDefaultColumn = function () {
+        var col = [];
+        col.field = "";
+        col.title = "";
+        col.width = "100px";
+        col.colspan = 1;
+        col.rowspan = 1;
+        col.hidden = false;
+        col.sortable = true;
+        col.order = "desc";
+        col.formatter = null;
+        col.styler = null;
+        col.editor = null;
+        return col;
+    }
+    this.getBlankRow = function () {
+        var obj = this.rows[0];
+        var temp = obj.constructor();
+        for (var key in obj) {
+            if (typeof (obj[key]) == 'boolean')
+                temp[key] = false;
+            else if (typeof (obj[key]) == 'number')
+                temp[key] = 0;
+            else
+                temp[key] = '';
+        }
+        return temp;
+    }
+
+    this.insertRow = function (dataIndex, row) {
+        if (!obj4u.HadValue(dataIndex))
+            rowIndex = 0;
+        if (!row) {
+            row = this.getBlankRow();
+        }
+        this.rows.splice(dataIndex, 0, row);
+        this.totalRow++;
+        this.resetRowIndex();
+        return row;
+    }
+    this.insertRowElement = function (isNormal) {
+        var rowElement = this.container.insertRow(this.container.rows.length);
+        if (isNormal) {
+            var obj = this;
+            rowElement.addEventListener("click",
+                             function () {
+                                 obj.selectRow(this, "click");
+                             },
+                             false);
+            rowElement.addEventListener("dblclick",
+                             function () {
+                                 obj.selectRow(this, "dblclick");
+                             },
+                             false);
+            if (rowElement.rowIndex % 2 == 1)
+                rowElement.className = "datarowodd";
+            else
+                rowElement.className = "dataroweven";
+        }
+        return rowElement;
+    }
+    this.insertCell = function (rowElement) {
+        var cellElement = rowElement.insertCell(rowElement.cells.length);
+        return cellElement;
     }
 
     this.loadData = function (jsonData) {
@@ -81,7 +258,7 @@ function oGrid(fcontainer, params) {
         if (start == 0) {
             last = jsonData.rows.length;
         }
-        
+
         var z = 0;
         for (var i = start; i < last; ++i) {
             var oldRow = this.rows[i];
@@ -91,7 +268,7 @@ function oGrid(fcontainer, params) {
             if (oldRow) {
                 this.rows[i].selected = oldRow.selected;
             }
-            
+
             z++;
         }
     }
@@ -154,180 +331,64 @@ function oGrid(fcontainer, params) {
 
         obj.loadFromUrl(furl, 'json', false, null, queryParams);
     }
-    this.addColumn = function (col) {
-        this.columns[this.columns.length] = col;
-        return col;
-    }
-    this.getColumn = function (field) {
-        var col = null;
-        if (!field) {
-            this.onLog("field is empty.");
-            return col;
-        }
-        for (var i = 0; i < this.columns.length; ++i) {
-            if (this.columns[i].field == field) {
-                col = this.columns[i];
-                break;
-            }
-        }
-        if (!col) {
-            this.onLog(field +" column was ont found.");
-            return col;
-        }
-        return col;
-    }
-    this.updateColumn = function (col) {
-        if (!col) {
-            this.onLog("col is empty.");
+
+    this.renderCell = function (rowElement, row, col) {
+        if (col.hidden) {
             return;
         }
+        var cell = this.insertCell(rowElement);
         if (!col.field) {
             this.onLog("col.field is empty.");
             return;
         }
-        for (var i = 0; i < this.columns.length; ++i) {
-            if (this.columns[i].field == col.field) {
-                this.columns[i] = col;
-                break;
-            }
-        }
-        this.columns[this.columns.length] = col;
-        return col;
-    }
-    this.addRows = function (rowData) {
-        if (typeof rowData == 'object') {
-            if (!rowData.length) {
-                this.setRow(rowData);
-                this.totalRow++;
-            } else {
-                for (var i = 0; i < rowData.length; ++i) {
-                    this.setRow(rowData[i]);
-                    this.totalRow++;
+        cell.field = col.field;
+
+        cell.id = rowElement.id + cell.field;
+        if (col.width)
+            cell.width = col.width;
+
+        var colValue = row[col.field];
+
+        var editor;
+        if (col.editor) {
+            if (col.editor) {
+                if (typeof (col.editor) == 'string') {
+                    editor = new this.editors[col.editor];
+                } else if (col.editor.type) {
+                    editor = new this.editors[col.editor.type];
                 }
             }
         }
-    }
-    this.setRow = function (rowData, dataIndex) {
-        if (typeof rowData == 'object') {
-            if (!dataIndex)
-                dataIndex = this.rows.length;
-            this.rows[dataIndex] = obj4u.Clone(rowData);
-            this.rows[dataIndex].origin = obj4u.Clone(rowData);
-        }
-    }
 
-    function addPageCilckEvent(obj, control, pageNum) {
-        control.addEventListener("click",
-                         function () {
-                             obj.changePageNumber(pageNum);
-                         },
-                         false);
-    }
-    this.changePageNumber = function (pageNum) {
-        if (pageNum > this.totalPage)
-            pageNum = 0;
-        this.pageNumber = pageNum;
-        var params = {};
-        params.page = this.pageNumber;
-        params.rows = this.pageSize;
-        if (this.loadUrl) {
-            if (!this.reloadPage) {
-                var start = this.pageNumber * this.pageSize;
-                if (!this.rows[start]) {
-                    this.load("data", params);
+        if (row.edit && row.selected) {
+            if (editor) {
+                if (editor.init) {
+                    editor.control = editor.init(cell, col.editor.options);
+                    editor.setValue(editor.control, colValue);
+                    cell.editor = editor;
                 }
-            } else
-                this.load("data", params);
-        }
+            }
+        } else {
+            if (!colValue)
+                colValue = '';
+            else if (editor) {
+                if (editor.getText) {
+                    colValue = editor.getText(colValue, col.editor.options);
+                }
+            }
 
-        this.renderData();
-    }
-
-    this.editRow = function (dataIndex, isEdit) {
-        if (obj4u.HadValue(dataIndex)) {
-            var rowElement = document.getElementById("row" + dataIndex);
-            var row = this.rows[dataIndex];
-            if (isEdit) {
-                if (!row.edit) {
-                    if (!row.selected) {
-                        this.selectRow(rowElement);
-                    }
-                    row.edit = true;
-                    if (rowElement) {
-                        this.renderRow(rowElement, row);
+            cell.innerHTML = "&nbsp;" + colValue;
+            if (row.cellStyle) {
+                if (!row.cellStyle.length) {
+                    this.setCellStyle(cell, row.cellStyle);
+                } else {
+                    for (var i = 0; i < row.cellStyle.length; ++i) {
+                        this.setCellStyle(cell, row.cellStyle[i]);
                     }
                 }
-            } else {
-                row.edit = false;
-                if (rowElement) {
-                    this.unselectedRow(rowElement, row);
-                    this.renderRow(rowElement, row);
-                }
-                //this.onAfterEdit(row);
-            }            
-        }
-    }
-    this.acceptChanges = function (dataIndex) {
-        if (obj4u.HadValue(dataIndex)) {
-            var rowElement = document.getElementById("row" + dataIndex);
-            var row = this.rows[dataIndex];
-            for (var i in rowElement.children) {
-                var cell = rowElement.children[i];
-                if (cell.editor) {
-                    var val = cell.editor.getValue(cell.editor.control);
-                    row[cell.field] = val;
-                }
-            }
-            this.editRow(dataIndex, false);
-        }
-    }
-    this.getSelectRows = function () {
-        var selectRows = [];
-        for (var i = 0; i < this.rows.length; ++i) {
-            if (this.rows[i].selected) {
-                selectRows[selectRows.length] = this.rows[i];
             }
         }
-        return selectRows;
-    }
-    this.getDefaultColumn = function () {
-        var col = [];
-        col.field = "";
-        col.title = "";
-        col.width = "100px";
-        col.colspan = 1;
-        col.rowspan = 1;
-        col.hidden = false;
-        col.sortable = true;
-        col.order = "desc";
-        col.formatter = null;
-        col.styler = null;
-        col.editor = null;
-        return col;
-    }
-    this.getBlankRow = function () {
-        var obj = this.rows[0];
-        var temp = obj.constructor();
-        for (var key in obj) {
-            if (typeof (obj[key]) == 'boolean')
-                temp[key] = false;
-            else if (typeof (obj[key]) == 'number')
-                temp[key] = 0;
-            else
-                temp[key] = '';
-        }
-        return temp;
-    }
-    this.insertRow = function (dataIndex, row) {
-        if (!obj4u.HadValue(dataIndex))
-            rowIndex = 0;
-        if (!row) {
-            row = this.getBlankRow();
-        }
-        this.rows.splice(dataIndex, 0, row);
-        this.totalRow++;
-        this.resetRowIndex();
-        return row;
+        return cell;
     }
     this.renderData = function () {
         this.container.innerHTML = "";
@@ -362,7 +423,6 @@ function oGrid(fcontainer, params) {
             this.renderNavigationFooter(rowElement);
         }
     }
-
     this.renderRowHead = function () {
         var thead = document.createElement("thead");
         thead.className = "headerrow";
@@ -465,52 +525,6 @@ function oGrid(fcontainer, params) {
             this.renderCell(rowElement, row, this.columns[i]);
         }
     }
-    this.renderCell = function (rowElement, row, col) {
-        if (col.hidden) {
-            return;
-        }
-        var cell = this.insertCell(rowElement);
-        if (!col.field) {
-            this.onLog("col.field is empty.");
-            return;
-        }
-        cell.field = col.field;
-
-        cell.id = rowElement.id + cell.field;
-        if(col.width)
-            cell.width = col.width;
-
-        var colValue = row[col.field];
-
-        if (row.edit && row.selected) {
-            if (col.editor) {
-                //var editor = this.editors[col.editor];
-                var editor = new this.editors[col.editor];
-                if (editor) {
-                    if (editor.init) {
-                        editor.control = editor.init(cell, "");
-                        editor.setValue(editor.control, colValue);
-                        cell.editor = editor;
-                    }
-                }
-
-            }
-        } else {
-            if (!colValue)
-                colValue = '';
-            cell.innerHTML = "&nbsp;" + colValue;
-            if (row.cellStyle) {
-                if (!row.cellStyle.length) {
-                    this.setCellStyle(cell, row.cellStyle);
-                } else {
-                    for (var i = 0; i < row.cellStyle.length; ++i) {
-                        this.setCellStyle(cell, row.cellStyle[i]);
-                    }
-                }
-            }
-        }
-        return cell;
-    }
     this.removeRow = function (dataIndex) {
         if (obj4u.HadValue(dataIndex)) {
             this.rows.splice(dataIndex, 1);
@@ -521,15 +535,6 @@ function oGrid(fcontainer, params) {
     this.resetRowIndex = function () {
         for (var i = 0; i < this.rows.length; ++i) {
             this.rows[i].index = i;
-        }
-    }
-    this.setCellStyle = function (cell, cellStyle) {
-        if (cell.field == cellStyle.field) {
-            if (cellStyle.className) {
-                cell.className = cellStyle.className;
-            } else {
-                cell.setAttribute("style", cellStyle.style);
-            }
         }
     }
 
@@ -548,16 +553,33 @@ function oGrid(fcontainer, params) {
                 //rowElement.oldClassName = rowElement.className;
                 //rowElement.className = "selected";
                 this.setSelectedRow(rowElement, this.rows[i]);
-                if(type)
+                if (type)
                     this.onSelectedRow(rowElement, this.rows[i]);
             }
         } else {
             this.unselectedRow(rowElement, this.rows[i]);
         }
-        if(type == "click")
+        if (type == "click")
             this.onClickedRow(rowElement, this.rows[i]);
         else if (type == "dblclick")
             this.onDblClickedRow(rowElement, this.rows[i]);
+    }
+    this.setCellStyle = function (cell, cellStyle) {
+        if (cell.field == cellStyle.field) {
+            if (cellStyle.className) {
+                cell.className = cellStyle.className;
+            } else {
+                cell.setAttribute("style", cellStyle.style);
+            }
+        }
+    }
+    this.setRow = function (rowData, dataIndex) {
+        if (typeof rowData == 'object') {
+            if (!obj4u.HadValue(dataIndex))
+                dataIndex = this.rows.length;
+            this.rows[dataIndex] = obj4u.Clone(rowData);
+            this.rows[dataIndex].origin = obj4u.Clone(rowData);
+        }
     }
     this.setSelectedRow = function (rowElement, row) {
         this.lastSelectedItem = rowElement;
@@ -565,6 +587,25 @@ function oGrid(fcontainer, params) {
         row.selected = true;
         rowElement.oldClassName = rowElement.className;
         rowElement.className = "selected";
+    }
+
+    this.updateColumn = function (col) {
+        if (!col) {
+            this.onLog("col is empty.");
+            return;
+        }
+        if (!col.field) {
+            this.onLog("col.field is empty.");
+            return;
+        }
+        for (var i = 0; i < this.columns.length; ++i) {
+            if (this.columns[i].field == col.field) {
+                this.columns[i] = col;
+                break;
+            }
+        }
+        this.columns[this.columns.length] = col;
+        return col;
     }
     this.unselectedRow = function (rowElement, row) {
         if (!row.edit) {
@@ -574,32 +615,6 @@ function oGrid(fcontainer, params) {
             if(rowElement)
                 rowElement.className = rowElement.oldClassName;
         }
-    }
-
-    this.insertRowElement = function (isNormal) {
-        var rowElement = this.container.insertRow(this.container.rows.length);
-        if (isNormal) {
-            var obj = this;
-            rowElement.addEventListener("click",
-                             function () {
-                                 obj.selectRow(this, "click");
-                             },
-                             false);
-            rowElement.addEventListener("dblclick",
-                             function () {
-                                 obj.selectRow(this, "dblclick");
-                             },
-                             false);
-            if (rowElement.rowIndex % 2 == 1)
-                rowElement.className = "datarowodd";
-            else
-                rowElement.className = "dataroweven";
-        }
-        return rowElement;
-    }
-    this.insertCell = function (rowElement) {
-        var cellElement = rowElement.insertCell(rowElement.cells.length);
-        return cellElement;
     }
 
     this.onAfterEdit = function (row, oriRow) {

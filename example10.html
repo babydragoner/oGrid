@@ -7,22 +7,27 @@
     <script type="text/javascript" src="./oGrid.js"></script>
     <link type="text/css" rel="stylesheet" href="oGrid.css" />
 
+    <script type="text/javascript" src="datepickr.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="datepickr.css" />
+
     <SCRIPT language="javascript">
         var rawData = {
             "columns": [
                 { "field": "productid", "title": "product id", "width": 100, "editor":"text" },
-                { "field": "itemid", "title": "item id", "width": 300, "editor": "text" }],
+                { "field": "status", "title": "status", "width": 200, "editor": { type: 'combo', options: [['purchase', 'P'], ['not use', 'D']] } },
+                { "field": "creDate", "title": "create date", "width": 150, "editor": "date" }
+            ],
             "rows": [
-                { "productid": "FI-SW-01", "unitcost": 10.00, "status": "P", "listprice": 36.50, "attr1": "Large", "itemid": "EST-1" },
-                { "productid": "K9-DL-01", "unitcost": 12.00, "status": "P", "listprice": 18.50, "attr1": "Spotted Adult Female", "itemid": "EST-10" },
-                { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 28.50, "attr1": "Venomless", "itemid": "EST-11" },
-                { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 26.50, "attr1": "Rattleless", "itemid": "EST-12" },
-                { "productid": "RP-LI-02", "unitcost": 12.00, "status": "P", "listprice": 35.50, "attr1": "Green Adult", "itemid": "EST-13" },
-                { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 158.50, "attr1": "Tailless", "itemid": "EST-14" },
-                { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 83.50, "attr1": "With tail", "itemid": "EST-15" },
-                { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 63.50, "attr1": "Adult Female", "itemid": "EST-16" },
-                { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 89.50, "attr1": "Adult Male", "itemid": "EST-17" },
-                { "productid": "AV-CB-01", "unitcost": 92.00, "status": "P", "listprice": 63.50, "attr1": "Adult Male", "itemid": "EST-18" }
+                { "productid": "FI-SW-01", "unitcost": 10.00, "status": "P", "listprice": 36.50, "attr1": "Large", "itemid": "EST-1", "creDate": "07/11/13" },
+                { "productid": "K9-DL-01", "unitcost": 12.00, "status": "P", "listprice": 18.50, "attr1": "Spotted Adult Female", "itemid": "EST-10", "creDate": "07/11/13" },
+                { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 28.50, "attr1": "Venomless", "itemid": "EST-11", "creDate": "07/11/13" },
+                { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 26.50, "attr1": "Rattleless", "itemid": "EST-12", "creDate": "07/11/13" },
+                { "productid": "RP-LI-02", "unitcost": 12.00, "status": "P", "listprice": 35.50, "attr1": "Green Adult", "itemid": "EST-13", "creDate": "07/11/13" },
+                { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 158.50, "attr1": "Tailless", "itemid": "EST-14", "creDate": "07/11/13" },
+                { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 83.50, "attr1": "With tail", "itemid": "EST-15", "creDate": "07/11/13" },
+                { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 63.50, "attr1": "Adult Female", "itemid": "EST-16", "creDate": "07/11/13" },
+                { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 89.50, "attr1": "Adult Male", "itemid": "EST-17", "creDate": "07/11/13" },
+                { "productid": "AV-CB-01", "unitcost": 92.00, "status": "P", "listprice": 63.50, "attr1": "Adult Male", "itemid": "EST-18", "creDate": "07/11/13" }
             ]
         };
 
@@ -30,6 +35,8 @@
         window.onload = function () {
             obj = new obj4u.oGrid(dataTable);
             obj.editors.text = text;
+            obj.editors.combo = combobox;
+            obj.editors.date = date;
             obj.event.AddEvent("onDblClickedRow", oGrid_DblClickedRow);
             obj.multiSelect = false;
             obj.loadData(rawData);
@@ -50,6 +57,63 @@
                 input.type = 'text';
                 input.size = 10;
                 container.appendChild(input);
+                return input;
+            }
+            this.getValue = function (target) {
+                return target.value;
+            }
+            this.setValue = function (target, value) {
+                target.value = value;
+            }
+            this.resize = function (target, width) {
+                target.width = width;
+            }
+        }
+        function combobox() {
+            this.init = function (container, options) {
+                var select = document.createElement("select");
+                for (var i = 0; i < options.length; i++) {
+                    var opt = new Option(options[i][0], options[i][1]);
+                    select.options.add(opt);
+                }
+                container.appendChild(select);
+                return select;
+            }
+            this.getValue = function (target) { // return save value
+                var val = target.options[target.selectedIndex].value;
+                return val;
+            }
+            this.getText = function (value, options) { // return display text
+                var val = value;
+                for (var i = 0; i < options.length; i++) {
+                    if (options[i][1] == value) {
+                        val = options[i][0];
+                        break;
+                    }
+                }
+                return val;
+            }
+            this.setValue = function (target, value) {
+                for (var i = 0; i < target.options.length; i++) {
+                    if (target.options[i].value == value) {
+                        target.options[i].selected = true;
+                        return;
+                    }
+                }
+            }
+            this.resize = function (target, width) {
+                target.width = width;
+            }
+        }
+        function date() {
+            this.init = function (container, options) {
+                var input = document.createElement("input");
+                input.id = container.id + "date";
+                input.size = 15;
+                container.appendChild(input);
+                new datepickr(input.id, {
+                    'dateFormat': 'm/d/y'
+                });
                 return input;
             }
             this.getValue = function (target) {
@@ -100,6 +164,11 @@
                 if (row.edit) {
                     obj.acceptChanges(dataIndex);
                     acceptChanges(row);
+                    applyVal.innerHTML = "apply value : ";
+                    for (var i = 0; i < obj.columns.length; ++i) {
+                        var col = obj.columns[i];
+                        applyVal.innerHTML += row[col.field] + ", ";
+                    }
                 } else {
                     alert("please edit row.");
                 }
@@ -134,6 +203,7 @@
     <input type="button" id="btnRemove" value="remove" onclick="removeRow();">
     <table id="dataTable">
     </table>
- 
+    <p>
+    <span id="applyVal"></span>
 </BODY>
 </HTML>
