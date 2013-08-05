@@ -1,16 +1,24 @@
-
-.oGrid td, th{border:1px solid #cccccc; color:#555555;text-align:center;line-height:28px;}
-.oGrid .headerrow{ background-color:#bbefef;}
-.oGrid .headerrow td 
+.oGrid
 {
-    color:#ffffff; text-align:center;
+    font-size:14px;border-collapse: collapse;
 }
+.oGrid td{border:1px solid #78aeb7; color:#555555;text-align:center;line-height:28px;}
+.oGrid .headerrow { background: linear-gradient(#bbefef,#78aeb7); color: #000;}
+.oGrid .headerrow th 
+{
+    text-align:center;
+    line-height:28px;
+}
+.oGrid .headerrow th:first-child { border-radius: 9px 0 0 0; }
+
+.oGrid .headerrow th:last-child { border-radius: 0 9px 0 0; }
+
 .oGrid .selected{background-color:#ebffaa;}
 
-.oGrid .datarowodd{background-color:#ffffff;}
-.oGrid .dataroweven{ background-color:#efefef;}
+.oGrid datarowodd{background-color:#ffffff;}
+.oGrid .dataroweven{background-color:#dcf3f6;}
 .oGrid .datarowodd:hover, .dataroweven:hover {
-	background-color: #3d80df;
+	background-color: #bbefef;
 }
 
 .oGrid div.pagination ul {

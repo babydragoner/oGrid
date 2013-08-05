@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.5.1
+* oGrid for pure javascript -  v0.5.2
 *
 * Copyright (c) 2013 watson chen (code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -401,8 +401,10 @@ function oGrid(fcontainer, params) {
             this.pageNumber = 0;
 
         if (this.showNavigation) {
-            var rowElement = this.insertRowElement(false);
-            this.renderNavigationHead(rowElement);
+            if (this.renderNavigationHead) {
+                var rowElement = this.insertRowElement(false);
+                this.renderNavigationHead(rowElement);
+            }
         }
         this.renderRowHead();
         var start = this.pageNumber * this.pageSize;
@@ -424,7 +426,8 @@ function oGrid(fcontainer, params) {
         }
     }
     this.renderRowHead = function () {
-        var thead = document.createElement("thead");
+        //var thead = document.createElement("thead");
+        var thead = this.container.insertRow(this.container.rows.length);
         thead.className = "headerrow";
         for (var i = 0; i < this.columns.length; ++i) {
             if (this.columns[i].hidden) {
@@ -434,11 +437,11 @@ function oGrid(fcontainer, params) {
             th.innerHTML = "&nbsp;" + this.columns[i].title;
             thead.appendChild(th);
         }
-        this.container.appendChild(thead);
+        //this.container.appendChild(thead);
     }
-    this.renderNavigationHead = function (rowElement) {
-        //this.renderNavigationBar(rowElement);
-    }
+    //this.renderNavigationHead = function (rowElement) {
+    //    //this.renderNavigationBar(rowElement);
+    //}
     this.renderNavigationFooter = function (rowElement) {
         this.renderNavigationBar(rowElement);
     }
