@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<HTML>
+<HEAD>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <TITLE>Load XML data</TITLE>
+    <script type="text/javascript" src="./oGrid.js"></script>
+    <link type="text/css" rel="stylesheet" href="oGrid.css" />
+    
+    <script type="text/javascript" src="./xml2json.js"></script>
+
+    <SCRIPT language="javascript">
+        var dataXml = "<data>"+
+                "<rows><productid>FI-SW-01</productid><unitcost>10</unitcost><status>P</status><listprice>36.5</listprice><attr1>Large</attr1><itemid>EST-1</itemid></rows>" +
+                "<rows><productid>K9-DL-01</productid><unitcost>12</unitcost><status>P</status><listprice>18.5</listprice><attr1>Spotted Adult Female</attr1><itemid>EST-10</itemid></rows>" +
+                "<rows><productid>RP-SN-01</productid><unitcost>12</unitcost><status>P</status><listprice>28.5</listprice><attr1>Venomless</attr1><itemid>EST-11</itemid></rows>" +
+                "<rows><productid>RP-SN-01</productid><unitcost>12</unitcost><status>P</status><listprice>26.5</listprice><attr1>Rattleless</attr1><itemid>EST-12</itemid></rows>" +
+                "<rows><productid>RP-LI-02</productid><unitcost>12</unitcost><status>P</status><listprice>35.5</listprice><attr1>Green Adult</attr1><itemid>EST-13</itemid></rows>" +
+                "<rows><productid>FL-DSH-01</productid><unitcost>12</unitcost><status>P</status><listprice>158.5</listprice><attr1>Tailless</attr1><itemid>EST-14</itemid></rows>" +
+                "<rows><productid>FL-DSH-01</productid><unitcost>12</unitcost><status>P</status><listprice>83.5</listprice><attr1>With tail</attr1><itemid>EST-15</itemid></rows>" +
+                "<rows><productid>FL-DLH-02</productid><unitcost>12</unitcost><status>P</status><listprice>63.5</listprice><attr1>Adult Female</attr1><itemid>EST-16</itemid></rows>" +
+                "<rows><productid>FL-DLH-02</productid><unitcost>12</unitcost><status>P</status><listprice>89.5</listprice><attr1>Adult Male</attr1><itemid>EST-17</itemid></rows>" +
+                "<rows><productid>AV-CB-01</productid><unitcost>92</unitcost><status>P</status><listprice>63.5</listprice><attr1>Adult Male</attr1><itemid>EST-18</itemid></rows>" +
+                "</data>";
+
+
+        var obj;
+        window.onload = function () {
+            var x2js = new X2JS();
+            var jData = x2js.xml_str2json(dataXml);
+            var rawData = jData.data;
+            obj = new obj4u.oGrid(dataTable);
+            obj.multiSelect = false;
+            obj.loadData(rawData);
+            var col = obj.getColumn('attr1');
+            col.width = '150px';
+            col = obj.getColumn('unitcost');
+            col.align = 'right';
+            col = obj.getColumn('listprice');
+            col.align = 'right';
+            obj.renderData();
+        }
+
+    </SCRIPT>
+</HEAD>
+<BODY>
+    <table id="dataTable">
+    </table>
+ 
+</BODY>
+</HTML>
