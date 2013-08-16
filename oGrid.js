@@ -1,7 +1,7 @@
 /*
-* oGrid for pure javascript -  v0.5.2
+* oGrid for pure javascript -  v0.5.3
 *
-* Copyright (c) 2013 watson chen (code.google.com/p/obj4u/)
+* Copyright (c) 2013 watson chen (http://code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
 *
 */
@@ -84,20 +84,7 @@ function oGrid(fcontainer, params) {
         if (pageNum > this.totalPage)
             pageNum = 0;
         this.pageNumber = pageNum;
-        var params = {};
-        params.page = this.pageNumber;
-        params.rows = this.pageSize;
-        if (this.loadUrl) {
-            if (!this.reloadPage) {
-                var start = this.pageNumber * this.pageSize;
-                if (!this.rows[start]) {
-                    this.load("data", params);
-                }
-            } else
-                this.load("data", params);
-        }
-
-        this.renderData();
+        this.refeshPage();
     }
 
     this.editRow = function (dataIndex, isEdit) {
@@ -143,15 +130,6 @@ function oGrid(fcontainer, params) {
         }
         return col;
     }
-    this.getSelectRows = function () {
-        var selectRows = [];
-        for (var i = 0; i < this.rows.length; ++i) {
-            if (this.rows[i].selected) {
-                selectRows[selectRows.length] = this.rows[i];
-            }
-        }
-        return selectRows;
-    }
     this.getDefaultColumn = function () {
         var col = [];
         col.field = "";
@@ -161,7 +139,7 @@ function oGrid(fcontainer, params) {
         col.rowspan = 1;
         col.hidden = false;
         col.sortable = true;
-        col.order = "desc";
+        col.order = null;
         col.formatter = null;
         col.styler = null;
         col.editor = null;
@@ -179,6 +157,33 @@ function oGrid(fcontainer, params) {
                 temp[key] = '';
         }
         return temp;
+    }
+    this.getQryParams = function () {
+        var params = {};
+        params.page = this.pageNumber;
+        params.rows = this.pageSize;
+        params.sort = "";
+        for (var i = 0; i < this.columns.length; ++i) {
+            var col = this.columns[i];
+            if (col.sortable) {
+                if (col.order) {
+                    if (params.sort)
+                        params.sort += ",";
+
+                    params.sort += col.field + " " + col.order;
+                }
+            }
+        }
+        return params;
+    }
+    this.getSelectRows = function () {
+        var selectRows = [];
+        for (var i = 0; i < this.rows.length; ++i) {
+            if (this.rows[i].selected) {
+                selectRows[selectRows.length] = this.rows[i];
+            }
+        }
+        return selectRows;
     }
 
     this.insertRow = function (dataIndex, row) {
@@ -332,6 +337,20 @@ function oGrid(fcontainer, params) {
         obj.loadFromUrl(furl, 'json', false, null, queryParams);
     }
 
+    this.refeshPage = function () {
+        var params = this.getQryParams();
+        if (this.loadUrl) {
+            if (!this.reloadPage) {
+                var start = this.pageNumber * this.pageSize;
+                if (!this.rows[start]) {
+                    this.load("data", params);
+                }
+            } else
+                this.load("data", params);
+        }
+
+        this.renderData();
+    }
     this.renderCell = function (rowElement, row, col) {
         if (col.hidden) {
             return;
@@ -376,8 +395,14 @@ function oGrid(fcontainer, params) {
                     colValue = editor.getText(colValue, col.editor.options);
                 }
             }
+            if (col.align) {
+                cell.align = col.align;
+            }
 
-            cell.innerHTML = "&nbsp;" + colValue;
+            if (cell.align.toLowerCase() == 'right')
+                cell.innerHTML = colValue + "&nbsp;";
+            else
+                cell.innerHTML = "&nbsp;" + colValue;
             if (row.cellStyle) {
                 if (!row.cellStyle.length) {
                     this.setCellStyle(cell, row.cellStyle);
@@ -430,11 +455,31 @@ function oGrid(fcontainer, params) {
         var thead = this.container.insertRow(this.container.rows.length);
         thead.className = "headerrow";
         for (var i = 0; i < this.columns.length; ++i) {
-            if (this.columns[i].hidden) {
+            var col = this.columns[i];
+            if (col.hidden) {
                 continue;
             }
             var th = document.createElement("th");
+            th.colIndex = i;
+            if (col.sortable) {
+                th.className = "sortable";
+                var obj = this;
+                th.addEventListener("click",
+                                 function () {
+                                     obj.orderBy(obj.columns[this.colIndex]);
+                                 },
+                                 false);
+            }
             th.innerHTML = "&nbsp;" + this.columns[i].title;
+            if (col.order) {
+                var span = document.createElement("span");
+                if (col.order == "asc") {
+                    span.className = "sort-asc";
+                } else {
+                    span.className = "sort-desc";
+                }
+                th.appendChild(span);
+            }
             thead.appendChild(th);
         }
         //this.container.appendChild(thead);
@@ -620,6 +665,18 @@ function oGrid(fcontainer, params) {
         }
     }
 
+    this.orderBy = function (col) {
+        if (!col.order) {
+            col.order = "desc";
+        }
+
+        if (col.order == "asc") {
+            col.order = "desc";
+        } else {
+            col.order = "asc";
+        }
+        this.refeshPage();
+    }
     this.onAfterEdit = function (row, oriRow) {
     }
     this.onLog = function (msg) {
