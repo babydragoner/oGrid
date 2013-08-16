@@ -9,6 +9,40 @@
 
     <script type="text/javascript" src="datepickr.min.js"></script>
     <link rel="stylesheet" type="text/css" href="datepickr.css" />
+	<style type="text/css">
+	    .btn
+	    {
+            background: linear-gradient(#ebf3fc,#78aeb7);
+            color: #393939;
+            border:1px #aaaaaa solid;
+            border-radius: 4px;
+            padding-bottom: 5px;
+            box-shadow:3px 3px 6px -2px rgba(20%,20%,40%,0.5);
+	    }
+        .btn:disabled {
+            background: linear-gradient(#ebf3fc,#808080);
+
+        } 
+        .btn:hover {
+	        background: linear-gradient(#FFF,#78aeb7);
+            color: #101010;
+        }
+        .btn[disabled]:hover {
+          /* turn off button hover styles */
+          background: linear-gradient(#ebf3fc,#808080);
+          color: #393939;
+        }
+        span.button { 
+          padding: 5px 10px;
+          border-radius: 10px;
+          background-color: orange;  
+          background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAvUlEQVQ4y63VMQrDMAyF4d/BGJ+rhA4dOnTo0Kn3P4ExxnSoXVQhpx0kEMmSjyfiKAF4AhVoqrvqjXdtoqPoBMQAPAZwhMpaYkAKwH1gFtgG0v9IlyZ4E2BVabtKeZhuglegKKyqsWXFVboJXgZQfqSUCZOFATkAZwEVY/ymQAtKQJ4Jd4VZqARnuqyxmXAfiAQtFJEuG9dPwtMC0zD6YXH/ldAddB/Z/aW4Hxv3g+3+6bkvB/f15b5gXX8BL0z+tEEtuNA8AAAAAElFTkSuQmCC);
+          background-size: 100% 100%;
+
+          border: 2px solid white;
+          color: white;
+        }
+	</style>
 
     <SCRIPT language="javascript">
         var rawData = {
@@ -197,10 +231,13 @@
     </SCRIPT>
 </HEAD>
 <BODY>
-    <input type="button" id="btnEdit" value="edit" onclick="edit();">
-    <input type="button" id="btnApply" value="apply" disabled=true onclick="apply();">
-    <input type="button" id="btnInsert" value="insert" onclick="insertRow();">
-    <input type="button" id="btnRemove" value="remove" onclick="removeRow();">
+    <div style="padding-bottom:10px;">
+        <span class="button">This is a button</span>
+        <input type="button" id="btnEdit" class="btn" value="edit" onclick="edit();">
+        <input type="button" id="btnApply" class="btn" value="apply" disabled=true onclick="apply();">
+        <input type="button" id="btnInsert" class="btn" value="insert" onclick="insertRow();">
+        <input type="button" id="btnRemove" class="btn" value="remove" onclick="removeRow();">
+    </div>
     <table id="dataTable">
     </table>
     <p>
