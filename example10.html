@@ -72,6 +72,7 @@
             obj.editors.combo = combobox;
             obj.editors.date = date;
             obj.event.AddEvent("onDblClickedRow", oGrid_DblClickedRow);
+            obj.event.AddEvent("onLog", oGrid_Log);
             obj.multiSelect = false;
             obj.loadData(rawData);
             obj.renderData();
@@ -83,6 +84,9 @@
                 obj.editRow(row.index, false);
             }
             acceptChanges(row);
+        }
+        function oGrid_Log(msg) {
+            alert(msg);
         }
 
         function text() {
