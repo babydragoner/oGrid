@@ -24,6 +24,7 @@
     background: linear-gradient(#ebf3fc,#78aeb7); 
     text-align:center;
     line-height:28px;
+    /* position: relative; cursor :e-resize;display: inline;overflow: hidden; */
 }
 .oGrid .headerrow th:first-child { border-left: none; border-radius: 6px 0 0 0; }
 
@@ -108,4 +109,31 @@
 	margin-right: 2px;
 	border: 1px solid #929292;
 	color: #929292;
+}
+
+.oGrid div.toolbar
+{
+    padding-bottom:2px;
+}
+.oGrid div.toolbar .btn
+{
+    background: linear-gradient(#ebf3fc,#78aeb7);
+    color: #393939;
+    border:1px #aaaaaa solid;
+    border-radius: 4px;
+    padding-bottom: 5px;
+    box-shadow:3px 3px 6px -2px rgba(20%,20%,40%,0.5);
+}
+.oGrid div.toolbar .btn:disabled {
+    background: linear-gradient(#ebf3fc,#808080);
+
+} 
+.oGrid div.toolbar .btn:hover {
+	background: linear-gradient(#FFF,#78aeb7);
+    color: #101010;
+}
+.oGrid div.toolbar .btn[disabled]:hover {
+    /* turn off button hover styles */
+    background: linear-gradient(#ebf3fc,#808080);
+    color: #393939;
 }

@@ -1,24 +1,100 @@
 /*
-* oGrid for pure javascript -  v0.5.3
+* oGrid for pure javascript -  v0.5.4
 *
 * Copyright (c) 2013 watson chen (http://code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
 *
 */
 var obj4u = obj4u || {};
-obj4u.oGrid = oGrid;
-obj4u.EventContorller = EventContorller;
-obj4u.Clone = Clone;
-obj4u.HadValue = HadValue;
-function oGrid(fcontainer, params) {
+
+obj4u.editors = {
+    text: function () {
+        this.init = function (container, options) {
+            var input = document.createElement("input");
+            input.type = 'text';
+            input.size = 10;
+            container.appendChild(input);
+            return input;
+        }
+        this.getValue = function (target) {
+            return target.value;
+        }
+        this.setValue = function (target, value) {
+            target.value = value;
+        }
+        this.resize = function (target, width) {
+            target.width = width;
+        }
+    },
+    combo: function () {
+        this.init = function (container, options) {
+            var select = document.createElement("select");
+            for (var i = 0; i < options.length; i++) {
+                var opt = new Option(options[i].text, options[i].id);
+                select.options.add(opt);
+            }
+            container.appendChild(select);
+            return select;
+        }
+        this.getValue = function (target) { // return save value
+            var val = target.options[target.selectedIndex].value;
+            return val;
+        }
+        this.getText = function (value, options) { // return display text
+            var val = value;
+            for (var i = 0; i < options.length; i++) {
+                if (options[i].id == value) {
+                    val = options[i].text;
+                    break;
+                }
+            }
+            return val;
+        }
+        this.setValue = function (target, value) {
+            for (var i = 0; i < target.options.length; i++) {
+                if (target.options[i].value == value) {
+                    target.options[i].selected = true;
+                    return;
+                }
+            }
+        }
+        this.resize = function (target, width) {
+            target.width = width;
+        }
+    },
+    date: function () {
+        this.init = function (container, options) {
+            var input = document.createElement("input");
+            input.id = container.id + "date";
+            input.size = 15;
+            container.appendChild(input);
+            new datepickr(input.id, {
+                'dateFormat': 'm/d/y'
+            });
+            return input;
+        }
+        this.getValue = function (target) {
+            return target.value;
+        }
+        this.setValue = function (target, value) {
+            target.value = value;
+        }
+        this.resize = function (target, width) {
+            target.width = width;
+        }
+    }
+};
+
+obj4u.oGrid = function oGrid(fcontainer, params) {
     this.container = fcontainer;
     this.totalRow;
     this.rows = [];
     this.columns = [];
-    this.editors = {};
+    this.editors = obj4u.editors;
     this.loadUrl;
     this.reloadPage = true;
     this.showNavigation = true;
+    this.showToolbar = false;
     this.multiSelect = true;
     this.lastSelectedItem;
     this.lastSelectedIndex;
@@ -27,6 +103,7 @@ function oGrid(fcontainer, params) {
     this.pageNumber = 0;
     this.pageSize = 10;
     this.event = new obj4u.EventContorller(this);
+    this.toolbar;
 
     if (!this.container.className) {
         this.container.className = "oGrid";
@@ -79,6 +156,23 @@ function oGrid(fcontainer, params) {
             this.editRow(dataIndex, false);
         }
     }
+    this.apply = function () {
+        var row;
+        if (obj.lastSelectedItem) {
+            var dataIndex = obj.lastSelectedIndex;
+            row = obj.rows[dataIndex];
+            var rowElement = obj.lastSelectedItem;
+            if (row.edit) {
+                obj.acceptChanges(dataIndex);
+            } else {
+                row = null;
+                this.onLog("please edit row.");
+            }
+        } else {
+            this.onLog("please select apply row.");
+        }
+        return row;
+    }
 
     this.changePageNumber = function (pageNum) {
         if (pageNum > this.totalPage)
@@ -87,6 +181,21 @@ function oGrid(fcontainer, params) {
         this.refeshPage();
     }
 
+    this.edit = function () {
+        var row;
+        if (this.lastSelectedItem) {
+            var dataIndex = this.lastSelectedIndex;
+            row = this.rows[dataIndex];
+            if (!row.edit) {
+                this.editRow(dataIndex, true);
+            } else {
+                this.editRow(dataIndex, false);
+            }
+        } else {
+            this.onLog("please select edit row.");
+        }
+        return row;
+    }
     this.editRow = function (dataIndex, isEdit) {
         if (obj4u.HadValue(dataIndex)) {
             var rowElement = document.getElementById("row" + dataIndex);
@@ -184,6 +293,15 @@ function oGrid(fcontainer, params) {
             }
         }
         return selectRows;
+    }
+    this.getEditor = function (name) {
+        if (this.editors[name]) {
+            var editor = new this.editors[name];
+            return editor;
+        } else {
+            this.onLog("can't found "+name+" editor.");
+            return null;
+        }
     }
 
     this.insertRow = function (dataIndex, row) {
@@ -372,9 +490,9 @@ function oGrid(fcontainer, params) {
         if (col.editor) {
             if (col.editor) {
                 if (typeof (col.editor) == 'string') {
-                    editor = new this.editors[col.editor];
+                    editor = this.getEditor(col.editor);
                 } else if (col.editor.type) {
-                    editor = new this.editors[col.editor.type];
+                    editor = this.getEditor(col.editor.type);
                 }
             }
         }
@@ -431,7 +549,14 @@ function oGrid(fcontainer, params) {
                 this.renderNavigationHead(rowElement);
             }
         }
+
+        if (this.showToolbar) {
+            var rowElement = this.insertRowElement(false);
+            this.renderToolbarHead(rowElement);
+        }
+
         this.renderRowHead();
+
         var start = this.pageNumber * this.pageSize;
         var last = start + this.pageSize;
         if (last > this.totalRow)
@@ -573,6 +698,20 @@ function oGrid(fcontainer, params) {
             this.renderCell(rowElement, row, this.columns[i]);
         }
     }
+    this.renderToolbarHead = function (rowElement) {
+        var td = document.createElement("td");
+        td.setAttribute("colspan", this.columns.length);
+        var div = document.createElement("div");
+        div.id = "toolbarHead";
+
+        this.toolbar = new obj4u.Toolbar(div, this);
+        this.toolbar.event.AddEvent("onLog", this.onLog);
+        this.toolbar.init();
+        
+        td.appendChild(div);
+        rowElement.appendChild(td);
+    }
+
     this.removeRow = function (dataIndex) {
         if (obj4u.HadValue(dataIndex)) {
             this.rows.splice(dataIndex, 1);
@@ -694,7 +833,114 @@ function oGrid(fcontainer, params) {
     }
 };
 
-function EventContorller(fcontrol) {
+obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
+    var objGrid = foGrid;
+    this.container = fcontainer;
+    this.container.className = "toolbar";
+    this.event = new obj4u.EventContorller(this);
+    this.buttons = {};
+
+    this.init = function () {
+        this.initButton();
+    };
+
+    this.initButton = function () {
+        this.buttons.btnEdit = this.addButton("btnEdit", "edit");
+        this.buttons.btnApply = this.addButton("btnApply", "apply");
+        this.buttons.btnApply.disabled = true;
+        this.buttons.btnInsert = this.addButton("btnInsert", "insert");
+        this.buttons.btnRemove = this.addButton("btnRemove", "remove");
+    }
+
+    this.acceptChanges = function (row) {
+        if (row.edit) {
+            this.buttons.btnEdit.value = "cancel";
+            this.buttons.btnApply.disabled = false;
+            this.buttons.btnInsert.disabled = true;
+            this.buttons.btnRemove.disabled = true;
+        } else {
+            this.buttons.btnEdit.value = "edit";
+            this.buttons.btnApply.disabled = true;
+            this.buttons.btnInsert.disabled = false;
+            this.buttons.btnRemove.disabled = false;
+        }
+    }
+    this.addButton=function(id, caption)
+    {
+        var obj = this;
+        var btn = document.createElement("input");
+        btn.type = "button";
+        btn.id = id;
+        btn.className = "btn";
+        btn.value = caption;
+        btn.onclick = function () {
+            if (obj.onBeforeBtnClick(this)) {
+                obj.btnClick(this);
+            }
+        };
+        this.container.appendChild(btn);
+        return btn;
+    }
+
+    this.btnClick = function (btn) {
+        var id = btn.id;
+        if (id == "btnEdit") {
+            this.edit();
+        }
+        else if (id == "btnApply") {
+            this.apply();
+        }
+        else if (id == "btnInsert") {
+            this.insertRow();
+        }
+        else if (id == "btnRemove") {
+            this.removeRow();
+        } else {
+            this.onCustomBtnClick(btn);
+        }
+    }
+    this.edit = function() {
+        var row = objGrid.edit();
+        if (row) {
+            this.acceptChanges(row);
+        }
+    }
+
+    this.apply = function apply() {
+        var row = objGrid.apply();
+        if (row) {
+            this.acceptChanges(row);
+        }
+    }
+
+    this.insertRow = function insertRow() {
+        var row = objGrid.insertRow();
+        objGrid.renderData();
+        objGrid.editRow(0, true);
+        this.acceptChanges(row);
+    }
+
+    this.removeRow = function () {
+        if (objGrid.lastSelectedItem) {
+            var dataIndex = objGrid.lastSelectedIndex;
+            objGrid.removeRow(dataIndex);
+            objGrid.renderData();
+        } else {
+            this.onLog("please select row.");
+        }
+    }
+
+    this.onBeforeBtnClick = function (btn) {
+        return true;
+    }
+    this.onCustomBtnClick = function (btn) {
+        return true;
+    }
+    this.onLog = function (msg) {
+    }
+}
+
+obj4u.EventContorller = function EventContorller(fcontrol) {
     var control = fcontrol;
 
     this.AddEvent = function (eventName, eventObject) {
@@ -710,7 +956,7 @@ function EventContorller(fcontrol) {
     }
 }
 
-function Clone(obj) {
+obj4u.Clone = function Clone(obj) {
     if (obj == null || typeof (obj) != 'object')
         return obj;
 
@@ -721,7 +967,7 @@ function Clone(obj) {
     return temp;
 }
 
-function HadValue(obj) {
+obj4u.HadValue = function HadValue(obj) {
     if (obj == null || typeof (obj) == 'undefined')
         return false;
     else

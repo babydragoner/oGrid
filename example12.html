@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<HTML>
+<HEAD>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <TITLE>sort remote data and inline edit.</TITLE>
+    <script type="text/javascript" src="./oGrid.js"></script>
+    <link type="text/css" rel="stylesheet" href="oGrid.css" />
+
+    <script type="text/javascript" src="datepickr.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="datepickr.css" />
+
+    <SCRIPT language="javascript">
+        var obj;
+        window.onload = function () {
+            obj = new obj4u.oGrid(dataTable);
+            obj.event.AddEvent("onLog", oGrid_Log);
+            obj.multiSelect = false;
+            obj.loadUrl = 'http://obj4u.com/samples/getJSON_DB.php';
+            obj.load("init");
+            obj.showToolbar = true;
+            obj.renderData();
+        }
+
+        function oGrid_Log(msg) {
+            alert(msg);
+        }
+    </SCRIPT>
+</HEAD>
+<BODY>
+
+    <TABLE id="dataTable">
+
+    </TABLE>
+ 
+</BODY>
+</HTML>
