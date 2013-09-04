@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.5.6
+* oGrid for pure javascript -  v0.5.7
 *
 * Copyright (c) 2013 watson chen (http://code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -109,7 +109,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
     if (!this.container.className) {
         this.container.className = "oGrid";
     }
-    
+
     if (params) {
         if (params.loadUrl) {
             this.loadUrl = params.loadUrl;
@@ -154,6 +154,12 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
                     row[cell.field] = val;
                 }
             }
+            if (row.state == "insert") {
+                this.sendAction("insert", null, row);
+                row.state = "none";
+            } else
+                this.sendAction("update", null, row);
+
             this.editRow(dataIndex, false);
         }
     }
@@ -218,7 +224,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
                     this.renderRow(rowElement, row);
                 }
                 //this.onAfterEdit(row);
-            }            
+            }
         }
     }
 
@@ -252,7 +258,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         col.order = null;
         col.formatter = null;
         col.styler = null;
-        col.editor = null;
+        col.editor = "text";
         return col;
     }
     this.getBlankRow = function () {
@@ -266,33 +272,40 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             else
                 temp[key] = '';
         }
+        temp.state = "insert";
         return temp;
     }
-    this.getODataParams = function () {
-        var params = {};
-        params.$inlinecount = "allpages";
-        params.$top = this.pageSize;
-        if (this.pageNumber > 1) {
-            params.$skip = this.pageNumber * this.pageSize;
+    this.getODataParams = function (params) {
+        if (!params)
+            params = {};
+        params.inlinecount = "allpages";
+        params.top = this.pageSize;
+        if (this.pageNumber > 0) {
+            params.skip = this.pageNumber * this.pageSize;
         }
-        params.$orderby = "";
+        params.orderby = "";
         for (var i = 0; i < this.columns.length; ++i) {
             var col = this.columns[i];
             if (col.sortable) {
                 if (col.order) {
-                    if (params.sort)
-                        params.sort += ",";
+                    if (params.orderby)
+                        params.orderby += ",";
 
-                    params.sort += col.field + " " + col.order;
+                    params.orderby += col.field + " " + col.order;
                 }
             }
         }
         return params;
     }
-    this.getQryParams = function () {
-        var params = {};
+    this.getQryParams = function (params) {
+        if (this.isOData) {
+            return this.getODataParams();
+        }
+        if (!params)
+            params = {};
         params.page = this.pageNumber;
         params.rows = this.pageSize;
+
         params.sort = "";
         for (var i = 0; i < this.columns.length; ++i) {
             var col = this.columns[i];
@@ -321,7 +334,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             var editor = new this.editors[name];
             return editor;
         } else {
-            this.onLog("can't found "+name+" editor.");
+            this.onLog("can't found " + name + " editor.");
             return null;
         }
     }
@@ -337,6 +350,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         this.resetRowIndex();
         return row;
     }
+
     this.insertRowElement = function (isNormal) {
         var rowElement = this.container.insertRow(this.container.rows.length);
         if (isNormal) {
@@ -417,87 +431,30 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             z++;
         }
     }
-    this.loadFromUrl = function (url, type, async, queryParams) {
-        var xmlhttp;
-        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
-            xmlhttp = new XMLHttpRequest();
-        } else {// code for IE6, IE5
-            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-        }
-        var obj = this;
-        xmlhttp.onreadystatechange = function () {
 
-            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-
-                var data;
-                var ct = xmlhttp.getResponseHeader("content-type"),
-		                xml = type == "xml" || !type && ct && ct.indexOf("xml") >= 0,
-		                data = xml ? xmlhttp.responseXML : xmlhttp.responseText;
-
-                //if (filter)
-                //    data = filter(data, type);
-
-                //if ( type.toLowerCase() == "script" )
-                //jQuery.globalEval( data );
-
-                data = obj.onLoadSuccess(data, type);
-                // Get the JavaScript object, if JSON is used.
-                if (type.toLowerCase() == "json")
-                    data = eval("(" + data + ")");
-
-                obj.loadData(data);
-            }
-        }
-
-        if (!this.isOData)
-            dataType = "POST";
-        else
-            dataType = "GET";
-
-        xmlhttp.open(dataType, url, async);
-        var qry = "";
-        if (queryParams) {
-            for (var p in queryParams) {
-                if (qry.length > 0)
-                    qry += "&";
-
-                if (this.oData)
-                    p = "$" + p;
-                
-                qry += p + "=" + queryParams[p];
-            }
-        }
-        xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        xmlhttp.send(qry);
-    }
-    this.load = function (type, queryParams) {
+    this.load = function (action, queryParams) {
         if (!this.loadUrl) {
             this.onLog("loadUrl is empty.");
             return;
         }
-
-        var furl = this.loadUrl;
-        if (type) {
-            furl = furl + "?type=" + type;
-        } else {
-            furl = furl + "?type=init";
-        }
-
-        obj.loadFromUrl(furl, 'json', false, queryParams);
+        if (!action)
+            action = "data";
+        this.sendAction(action, queryParams);
     }
 
     this.refeshPage = function () {
-        var params = this.getQryParams();
         if (this.loadUrl) {
             if (!this.reloadPage) {
                 var start = this.pageNumber * this.pageSize;
-                if (!this.rows[start]) {
-                    this.load("data", params);
+                var last = start + this.pageSize;
+                if (last > this.totalRow)
+                    last = this.totalRow;
+                if (!this.rows[start] && !this.rows[last]) {
+                    this.load();
                 }
             } else
-                this.load("data", params);
+                this.load();
         }
-
         this.renderData();
     }
     this.renderCell = function (rowElement, row, col) {
@@ -565,7 +522,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         return cell;
     }
     this.renderData = function () {
-        this.container.innerHTML = "";
+        //this.container.innerHTML = "";
         if (!this.showNavigation) {
             this.pageSize = this.totalRow;
         }
@@ -574,16 +531,21 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         if (this.pageNumber > this.totalPage || this.pageNumber < 0)
             this.pageNumber = 0;
 
+        if (this.showToolbar && this.container.rows.length <= 0) {
+            var rowElement = this.insertRowElement(false);
+            this.renderToolbarHead(rowElement);
+        } else {
+            var rowCount = this.container.rows.length;
+            for (var i = 1; i < rowCount; ++i) {
+                this.container.deleteRow(1);
+            }
+        }
+
         if (this.showNavigation) {
             if (this.renderNavigationHead) {
                 var rowElement = this.insertRowElement(false);
                 this.renderNavigationHead(rowElement);
             }
-        }
-
-        if (this.showToolbar) {
-            var rowElement = this.insertRowElement(false);
-            this.renderToolbarHead(rowElement);
         }
 
         this.renderRowHead();
@@ -596,7 +558,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         for (var i = start; i < last; ++i) {
             rowElement = this.insertRowElement(true);
             var row = this.rows[i];
-            rowElement.id = "row"+i;
+            rowElement.id = "row" + i;
             rowElement.dataIndex = i;
             this.renderRow(rowElement, row);
         }
@@ -687,7 +649,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
 
         li = document.createElement("li");
         li.innerHTML = this.pageNames[2];
-        if (this.pageNumber == this.totalPage-1) {
+        if (this.pageNumber == this.totalPage - 1) {
             li.className = "disabled";
         } else {
             li.className = "normal";
@@ -697,11 +659,11 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
 
         li = document.createElement("li");
         li.innerHTML = this.pageNames[3];
-        if (this.pageNumber == this.totalPage-1) {
+        if (this.pageNumber == this.totalPage - 1) {
             li.className = "disabled";
         } else {
             li.className = "normal";
-            addPageCilckEvent(this, li, this.totalPage-1);
+            addPageCilckEvent(this, li, this.totalPage - 1);
         }
         ul.appendChild(li);
 
@@ -737,16 +699,23 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
 
         this.toolbar = new obj4u.Toolbar(div, this);
         this.toolbar.event.AddEvent("onLog", this.onLog);
-        
+
         td.appendChild(div);
         rowElement.appendChild(td);
     }
 
     this.removeRow = function (dataIndex) {
         if (obj4u.HadValue(dataIndex)) {
-            this.rows.splice(dataIndex, 1);
-            this.totalRow--;
-            this.resetRowIndex();
+            var row = this.rows[dataIndex];
+            if (row) {
+                if (row.state != "insert") {
+                    this.sendAction("remove", null, row);
+                }
+                //this.rows.splice(dataIndex, 1);
+                //this.totalRow--;
+                //this.resetRowIndex();
+                this.refeshPage();
+            }
         }
     }
     this.resetRowIndex = function () {
@@ -755,6 +724,99 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         }
     }
 
+    this.sendAction = function (action, queryParams, row) {
+        var xmlhttp;
+        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        } else {// code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        queryParams = this.getQryParams(queryParams);
+
+        var obj = this;
+        xmlhttp.onreadystatechange = function () {
+
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+
+                var data;
+                //var ct = xmlhttp.getResponseHeader("content-type"),
+                //        xml = dataType == "xml" || !dataType && ct && ct.indexOf("xml") >= 0,
+                //        data = xml ? xmlhttp.responseXML : xmlhttp.responseText;
+                var ct = xmlhttp.getResponseHeader("content-type"),
+                data = xmlhttp.responseText;
+                //if (filter)
+                //    data = filter(data, type);
+
+                //if ( type.toLowerCase() == "script" )
+                //jQuery.globalEval( data );
+
+                // Get the JavaScript object, if JSON is used.
+                //if (dataType.toLowerCase() == "json")
+                //    data = eval("(" + data + ")");
+                data = eval("(" + data + ")");
+                data = obj.onLoadSuccess(data, action);
+                obj.loadData(data);
+            }
+        }
+
+        var furl = this.loadUrl;
+
+        if (!this.isOData) {
+            var urlType = "data";
+            if (action == "init")
+                urlType = "init";
+            else if (action == "insert")
+                urlType = "add";
+            else if (action == "update")
+                urlType = "mod";
+            else if (action == "remove")
+                urlType = "del";
+
+            furl = furl + "?type=" + urlType;
+        }
+
+        var qry = "";
+        if (queryParams) {
+            for (var p in queryParams) {
+                var pValue = queryParams[p];
+                if (obj4u.HadValue(pValue)) {
+                    if (qry.length > 0)
+                        qry += "&";
+
+                    if (this.isOData)
+                        p = "%24" + p;
+
+                    qry += p + "=" + pValue;
+                }
+            }
+        }
+        if (this.isOData && obj4u.HadValue(qry)) {
+            furl += "?" + qry;
+            qry = "";
+        }
+        var contentType = "application/x-www-form-urlencoded";
+        if (!this.isOData) {
+            method = "POST";
+        } else {
+            if (action == "init" || action == "data")
+                method = "GET";
+            else if (action == "insert")
+                method = "POST";
+            else if (action == "update")
+                method = "PUT";
+            else if (action == "remove")
+                method = "DELETE";
+            contentType = "application/json";
+            //for (var p in jsonData.rows[0]) {
+            //}
+            qry = JSON.stringify(row);
+        }
+        var async = false;
+        xmlhttp.open(method, furl, async);
+
+        xmlhttp.setRequestHeader("Content-type", contentType);
+        xmlhttp.send(qry);
+    }
     this.selectRow = function (rowElement, type) {
         var i = rowElement.dataIndex;
         if (!this.rows[i].selected) {
@@ -796,6 +858,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
                 dataIndex = this.rows.length;
             this.rows[dataIndex] = obj4u.Clone(rowData);
             this.rows[dataIndex].origin = obj4u.Clone(rowData);
+            this.rows[dataIndex].state = "none";
         }
     }
     this.setSelectedRow = function (rowElement, row) {
@@ -829,7 +892,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             this.lastSelectedItem = null;
             this.lastSelectedIndex = null;
             row.selected = false;
-            if(rowElement)
+            if (rowElement)
                 rowElement.className = rowElement.oldClassName;
         }
     }
@@ -850,8 +913,16 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
     }
     this.onLog = function (msg) {
     }
-    this.onLoadSuccess = function (data, type) {
-        return data;
+    this.onLoadSuccess = function (data, action) {
+        if (this.isOData) {
+            if (action == "init" || action == "data") {
+                var res = {};
+                res.total = data.Count;
+                res.rows = data.Items;
+            }
+            return res;
+        } else
+            return data;
     }
     this.onDblClickedRow = function (rowElement, row) {
     }
@@ -891,8 +962,7 @@ obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
             this.buttons.btnRemove.disabled = false;
         }
     }
-    this.addButton=function(id, caption)
-    {
+    this.addButton = function (id, caption) {
         var obj = this;
         var btn = document.createElement("input");
         btn.type = "button";
@@ -925,7 +995,7 @@ obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
             this.onCustomBtnClick(btn);
         }
     }
-    this.edit = function() {
+    this.edit = function () {
         var row = objGrid.edit();
         if (row) {
             this.acceptChanges(row);
@@ -981,7 +1051,7 @@ obj4u.EventContorller = function EventContorller(fcontrol) {
         var event = control[eventName];
 
         if (event)
-            control[eventName] = function (){};
+            control[eventName] = function () { };
     }
 }
 
@@ -997,7 +1067,11 @@ obj4u.Clone = function Clone(obj) {
 }
 
 obj4u.HadValue = function HadValue(obj) {
-    if (obj == null || typeof (obj) == 'undefined')
+    if (typeof (obj) === 'number')
+        return true;
+    else if (typeof (obj) === 'string' && obj == "")
+        return false;
+    else if (obj == null || typeof (obj) == 'undefined')
         return false;
     else
         return true;
