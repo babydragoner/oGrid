@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.5.4
+* oGrid for pure javascript -  v0.5.6
 *
 * Copyright (c) 2013 watson chen (http://code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -95,6 +95,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
     this.reloadPage = true;
     this.showNavigation = true;
     this.showToolbar = false;
+    this.isOData = false;
     this.multiSelect = true;
     this.lastSelectedItem;
     this.lastSelectedIndex;
@@ -267,6 +268,27 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         }
         return temp;
     }
+    this.getODataParams = function () {
+        var params = {};
+        params.$inlinecount = "allpages";
+        params.$top = this.pageSize;
+        if (this.pageNumber > 1) {
+            params.$skip = this.pageNumber * this.pageSize;
+        }
+        params.$orderby = "";
+        for (var i = 0; i < this.columns.length; ++i) {
+            var col = this.columns[i];
+            if (col.sortable) {
+                if (col.order) {
+                    if (params.sort)
+                        params.sort += ",";
+
+                    params.sort += col.field + " " + col.order;
+                }
+            }
+        }
+        return params;
+    }
     this.getQryParams = function () {
         var params = {};
         params.page = this.pageNumber;
@@ -395,7 +417,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             z++;
         }
     }
-    this.loadFromUrl = function (url, type, async, filter, queryParams) {
+    this.loadFromUrl = function (url, type, async, queryParams) {
         var xmlhttp;
         if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
             xmlhttp = new XMLHttpRequest();
@@ -412,8 +434,8 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
 		                xml = type == "xml" || !type && ct && ct.indexOf("xml") >= 0,
 		                data = xml ? xmlhttp.responseXML : xmlhttp.responseText;
 
-                if (filter)
-                    data = filter(data, type);
+                //if (filter)
+                //    data = filter(data, type);
 
                 //if ( type.toLowerCase() == "script" )
                 //jQuery.globalEval( data );
@@ -427,12 +449,21 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             }
         }
 
-        xmlhttp.open("POST", url, async);
+        if (!this.isOData)
+            dataType = "POST";
+        else
+            dataType = "GET";
+
+        xmlhttp.open(dataType, url, async);
         var qry = "";
         if (queryParams) {
             for (var p in queryParams) {
                 if (qry.length > 0)
                     qry += "&";
+
+                if (this.oData)
+                    p = "$" + p;
+                
                 qry += p + "=" + queryParams[p];
             }
         }
@@ -452,7 +483,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             furl = furl + "?type=init";
         }
 
-        obj.loadFromUrl(furl, 'json', false, null, queryParams);
+        obj.loadFromUrl(furl, 'json', false, queryParams);
     }
 
     this.refeshPage = function () {
@@ -706,7 +737,6 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
 
         this.toolbar = new obj4u.Toolbar(div, this);
         this.toolbar.event.AddEvent("onLog", this.onLog);
-        this.toolbar.init();
         
         td.appendChild(div);
         rowElement.appendChild(td);
@@ -840,10 +870,6 @@ obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
     this.event = new obj4u.EventContorller(this);
     this.buttons = {};
 
-    this.init = function () {
-        this.initButton();
-    };
-
     this.initButton = function () {
         this.buttons.btnEdit = this.addButton("btnEdit", "edit");
         this.buttons.btnApply = this.addButton("btnApply", "apply");
@@ -938,6 +964,9 @@ obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
     }
     this.onLog = function (msg) {
     }
+
+    // init toolbar
+    this.initButton();
 }
 
 obj4u.EventContorller = function EventContorller(fcontrol) {
