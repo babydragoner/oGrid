@@ -1,89 +1,11 @@
 /*
-* oGrid for pure javascript -  v0.5.7
+* oGrid for pure javascript -  v0.6
 *
 * Copyright (c) 2013 watson chen (http://code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
 *
 */
 var obj4u = obj4u || {};
-
-obj4u.editors = {
-    text: function () {
-        this.init = function (container, options) {
-            var input = document.createElement("input");
-            input.type = 'text';
-            input.size = 10;
-            container.appendChild(input);
-            return input;
-        }
-        this.getValue = function (target) {
-            return target.value;
-        }
-        this.setValue = function (target, value) {
-            target.value = value;
-        }
-        this.resize = function (target, width) {
-            target.width = width;
-        }
-    },
-    combo: function () {
-        this.init = function (container, options) {
-            var select = document.createElement("select");
-            for (var i = 0; i < options.length; i++) {
-                var opt = new Option(options[i].text, options[i].id);
-                select.options.add(opt);
-            }
-            container.appendChild(select);
-            return select;
-        }
-        this.getValue = function (target) { // return save value
-            var val = target.options[target.selectedIndex].value;
-            return val;
-        }
-        this.getText = function (value, options) { // return display text
-            var val = value;
-            for (var i = 0; i < options.length; i++) {
-                if (options[i].id == value) {
-                    val = options[i].text;
-                    break;
-                }
-            }
-            return val;
-        }
-        this.setValue = function (target, value) {
-            for (var i = 0; i < target.options.length; i++) {
-                if (target.options[i].value == value) {
-                    target.options[i].selected = true;
-                    return;
-                }
-            }
-        }
-        this.resize = function (target, width) {
-            target.width = width;
-        }
-    },
-    date: function () {
-        this.init = function (container, options) {
-            var input = document.createElement("input");
-            input.id = container.id + "date";
-            input.size = 15;
-            container.appendChild(input);
-            new datepickr(input.id, {
-                'dateFormat': 'm/d/y'
-            });
-            return input;
-        }
-        this.getValue = function (target) {
-            return target.value;
-        }
-        this.setValue = function (target, value) {
-            target.value = value;
-        }
-        this.resize = function (target, width) {
-            target.width = width;
-        }
-    }
-};
 
 obj4u.oGrid = function oGrid(fcontainer, params) {
     this.container = fcontainer;
@@ -725,39 +647,9 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
     }
 
     this.sendAction = function (action, queryParams, row) {
-        var xmlhttp;
-        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
-            xmlhttp = new XMLHttpRequest();
-        } else {// code for IE6, IE5
-            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-        }
-        queryParams = this.getQryParams(queryParams);
 
-        var obj = this;
-        xmlhttp.onreadystatechange = function () {
-
-            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-
-                var data;
-                //var ct = xmlhttp.getResponseHeader("content-type"),
-                //        xml = dataType == "xml" || !dataType && ct && ct.indexOf("xml") >= 0,
-                //        data = xml ? xmlhttp.responseXML : xmlhttp.responseText;
-                var ct = xmlhttp.getResponseHeader("content-type"),
-                data = xmlhttp.responseText;
-                //if (filter)
-                //    data = filter(data, type);
-
-                //if ( type.toLowerCase() == "script" )
-                //jQuery.globalEval( data );
-
-                // Get the JavaScript object, if JSON is used.
-                //if (dataType.toLowerCase() == "json")
-                //    data = eval("(" + data + ")");
-                data = eval("(" + data + ")");
-                data = obj.onLoadSuccess(data, action);
-                obj.loadData(data);
-            }
-        }
+        if (action == "init" || action == "data")
+            queryParams = this.getQryParams(queryParams);
 
         var furl = this.loadUrl;
 
@@ -797,6 +689,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         var contentType = "application/x-www-form-urlencoded";
         if (!this.isOData) {
             method = "POST";
+            qry = "data="+JSON.stringify(row);
         } else {
             if (action == "init" || action == "data")
                 method = "GET";
@@ -807,16 +700,22 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             else if (action == "remove")
                 method = "DELETE";
             contentType = "application/json";
-            //for (var p in jsonData.rows[0]) {
-            //}
+
             qry = JSON.stringify(row);
         }
-        var async = false;
-        xmlhttp.open(method, furl, async);
 
-        xmlhttp.setRequestHeader("Content-type", contentType);
-        xmlhttp.send(qry);
+        var fajax = new obj4u.Ajax();
+        var res = fajax.sync({
+            method: method,
+            url: furl,
+            contentType: contentType,
+            data: qry
+        });
+        res = obj.onLoadSuccess(res, action);
+        if (action == "init" || action == "data")
+            obj.loadData(res);
     }
+
     this.selectRow = function (rowElement, type) {
         var i = rowElement.dataIndex;
         if (!this.rows[i].selected) {
@@ -826,11 +725,6 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
                 this.unselectedRow(this.lastSelectedItem, this.rows[this.lastSelectedItem.dataIndex]);
             }
             if (flag) {
-                //this.lastSelectedItem = rowElement;
-                //this.lastSelectedIndex = i;
-                //this.rows[i].selected = true;
-                //rowElement.oldClassName = rowElement.className;
-                //rowElement.className = "selected";
                 this.setSelectedRow(rowElement, this.rows[i]);
                 if (type)
                     this.onSelectedRow(rowElement, this.rows[i]);
@@ -843,6 +737,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         else if (type == "dblclick")
             this.onDblClickedRow(rowElement, this.rows[i]);
     }
+
     this.setCellStyle = function (cell, cellStyle) {
         if (cell.field == cellStyle.field) {
             if (cellStyle.className) {
@@ -852,6 +747,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             }
         }
     }
+
     this.setRow = function (rowData, dataIndex) {
         if (typeof rowData == 'object') {
             if (!obj4u.HadValue(dataIndex))
@@ -861,6 +757,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             this.rows[dataIndex].state = "none";
         }
     }
+
     this.setSelectedRow = function (rowElement, row) {
         this.lastSelectedItem = rowElement;
         this.lastSelectedIndex = row.index;
@@ -912,6 +809,8 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
     this.onAfterEdit = function (row, oriRow) {
     }
     this.onLog = function (msg) {
+        if (window.console)
+            console.log(msg);
     }
     this.onLoadSuccess = function (data, action) {
         if (this.isOData) {
@@ -933,6 +832,112 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
     this.onUnselectedRow = function (rowElement, row) {
     }
 };
+
+obj4u.comboBox = function comboBox(fcontainer, params) {
+    this.container = fcontainer;
+    this.control;
+    this.loadUrl;
+    this.isOData = false;
+    this.valueField = "id";
+    this.textField = "text";
+    this.selectValue;
+    this.selectText;
+    this.selectIndex;
+    var obj = this;
+    this.data;
+    this.setParams = function (params) {
+        if (params) {
+            if (params.loadUrl) {
+                this.loadUrl = params.loadUrl;
+            }
+            if (params.valueField) {
+                this.valueField = params.valueField;
+            }
+            if (params.textField) {
+                this.textField = params.textField;
+            }
+            if (params.isOData) {
+                this.isOData = params.isOData;
+            }
+        }
+    }
+    this.init = function (fcontainer, params) {
+        if (fcontainer)
+            this.container = fcontainer;
+        this.setParams(params);
+        var select = document.createElement("select");
+        this.control = select;
+
+        select.addEventListener("change",
+                         function () {
+                             //alert("select");
+                             obj.selectValue = this.options[this.selectedIndex].value;
+                             obj.selectText = this.options[this.selectedIndex].text;
+                             obj.selectIndex = this.selectedIndex;
+                         },
+                         false);
+
+        var data = this.getData(params);
+
+        this.load(data);
+
+        this.container.appendChild(select);
+        return select;
+    }
+    this.load = function (options) {
+        for (var i = 0; i < options.length; i++) {
+            var opt = new Option(options[i][obj.textField], options[i][obj.valueField]);
+            obj.control.options.add(opt);
+        }
+    }
+    this.getData = function (params) {
+        if (params.loadUrl) {
+            if (!params.data) {
+                var method = "POST";
+                if (params.isOData)
+                    method = "GET";
+                var fajax = new obj4u.Ajax();
+                var res = fajax.sync({
+                    method: method,
+                    url: params.loadUrl
+                });
+                if (params.isOData)
+                    params.data = res.Items;
+            }
+            data = params.data;
+        } else {
+            data = params;
+        }
+        return data;
+    }
+    this.getValue = function (target) { // return save value
+        //var val = target.options[target.selectedIndex].value;
+        return this.selectValue;
+    }
+    this.getText = function (value, params) { // return display text
+        var val = value;
+        var data = this.getData(params);
+        for (var i = 0; i < data.length; i++) {
+            if (data[i][params.valueField] == value) {
+                val = data[i][params.textField];
+                break;
+            }
+        }
+        return val;
+    }
+    this.setValue = function (target, value) {
+        for (var i = 0; i < target.options.length; i++) {
+            if (target.options[i].value == value) {
+                target.options[i].selected = true;
+                return;
+            }
+        }
+    }
+    this.resize = function (target, width) {
+        target.width = width;
+    }
+    //this.init();
+}
 
 obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
     var objGrid = foGrid;
@@ -1055,6 +1060,55 @@ obj4u.EventContorller = function EventContorller(fcontrol) {
     }
 }
 
+obj4u.Ajax = function Ajax() {
+    this.event = new obj4u.EventContorller(this);
+
+    this.onLoadSuccess = function (data, xmlhttp) {
+        this.data = data;
+    }
+
+    this.sync = function (params) {
+        if (!params)
+            params = {};
+        params.async = false;
+        this.send(params);
+        return this.data;
+    }
+    this.send = function (params) {
+        var xmlhttp;
+        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        } else {// code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        var obj = this;
+        xmlhttp.onreadystatechange = function () {
+
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+
+                var ct = xmlhttp.getResponseHeader("content-type");
+                var data = xmlhttp.responseText;
+
+                obj.data = eval("(" + data + ")");
+                obj.onLoadSuccess(obj.data, xmlhttp);
+            }
+        }
+        var method = "POST";
+        if (params.method)
+            method = params.method;
+        var async = true;
+        if (obj4u.HadValue(params.async))
+            async = params.async;
+        xmlhttp.open(method, params.url, async);
+
+        var contentType = "application/x-www-form-urlencoded";
+        if (params.contentType)
+            contentType = params.contentType;
+        xmlhttp.setRequestHeader("Content-type", contentType);
+        xmlhttp.send(params.data);
+    }
+}
+
 obj4u.Clone = function Clone(obj) {
     if (obj == null || typeof (obj) != 'object')
         return obj;
@@ -1076,3 +1130,47 @@ obj4u.HadValue = function HadValue(obj) {
     else
         return true;
 }
+
+obj4u.editors = {
+    text: function () {
+        this.init = function (container, options) {
+            var input = document.createElement("input");
+            input.type = 'text';
+            input.size = 10;
+            input.style.width = "100%";
+            container.appendChild(input);
+            return input;
+        }
+        this.getValue = function (target) {
+            return target.value;
+        }
+        this.setValue = function (target, value) {
+            target.value = value;
+        }
+        this.resize = function (target, width) {
+            target.width = width;
+        }
+    },
+    combo: obj4u.comboBox,
+    date: function () {
+        this.init = function (container, options) {
+            var input = document.createElement("input");
+            input.id = container.id + "date";
+            input.size = 15;
+            container.appendChild(input);
+            new datepickr(input.id, {
+                'dateFormat': 'm/d/y'
+            });
+            return input;
+        }
+        this.getValue = function (target) {
+            return target.value;
+        }
+        this.setValue = function (target, value) {
+            target.value = value;
+        }
+        this.resize = function (target, width) {
+            target.width = width;
+        }
+    }
+};

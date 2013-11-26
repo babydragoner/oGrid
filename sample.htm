@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<title>Reference Data</title>
+<style type="text/css">
+body {
+    background: #B0B3B2;
+    color: #444444;
+    font-family: Verdana;
+    font-size: 70%;
+}
+
+.resultBox {
+    border: 1px solid #505050;
+    margin: 10px 4px 4px 10px;
+    padding: 10px 4px 4px 10px;
+    max-width: 600px;
+}
+
+.resultName { font-size: 125%; }
+
+.moreBox {
+    font-size: 185%;
+    font-weight: bold;
+    color: Red;
+    border: 1px solid black;
+    background: white;
+}
+</style>
+</head>
+<body>
+
+<h1>Reference Data</h1>
+<p>
+This sample page uses the data at <a href="http://tv.telerik.com/services/odata.svc/">http://tv.telerik.com/services/odata.svc/</a>
+to search for posts.
+</p>
+
+<p>Enter words to search for in the available videos, separated by spaces.</p>
+<input id="searchBox" value="HTML" />
+<button id="searchButton">Search</button>
+<div id="resultsArea"></div>
+
+<script type="x-jquery-tmpl" id="searchResultsTemplate">
+{{each results}}
+<div class='resultBox'>
+<div><span class='resultName'>${$value.Name}</span></div>
+<table><tr>
+  <td valign='top'><a href="${$value.Url}"><img border="0" src="${$value.ImageUrl}" /></a></td>
+  <td valign='top'>${$value.Description}</td>
+</tr></table>
+</div>
+{{/each}}
+{{if __next}}
+<div class='moreBox'>More results are available - try refining your query.</div>
+{{/if}}
+</script>
+
+<script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.1.min.js"></script>
+<script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"></script>
+<script type="text/javascript" src="datajs-1.1.1.js"></script>
+
+<script type="text/javascript">
+// Root URI for the service.
+var serviceUri = "http://tv.telerik.com/services/odata.svc/";
+
+$(function () {
+    $("#searchButton").click(function () {
+        var phrase = $("#searchBox").val();
+
+        // Break into words.
+        var re = /\b(\w+)\b/g;
+        var words = phrase.match(re);
+
+        var message;
+        if (!words) {
+            message = "Type at least one word, eg: 'HTML'";
+        } else {
+            message = "Words: " + words.join(" ");
+
+            // Create the URI by adding a filter and selecting only
+            // the properties we care about.
+            var requestUri = serviceUri + "Videos?" +
+                "$select=Name,Description,ImageUrl,Url&" +
+                "$top=50&" +
+                "$orderby=DatePublish%20desc&" +
+                "$filter=";
+            $.each(words, function (key, word) {
+                if (key) requestUri += "%20and%20";
+                    
+                // The word will go as an OData literal, so double any single quotes.
+                word = word.replace(/'/g, "''");
+
+                // We're building a URI, so escape the value.
+                word = encodeURIComponent(word);
+
+                requestUri += "substringof('" + word + "', Description)";
+            });
+
+            message += ". URI is " + requestUri;
+
+            // Let's make that request then.
+            OData.defaultHttpClient.enableJsonpCallback = true;
+            OData.read(requestUri, function (data) {
+                $("#searchResultsTemplate").tmpl(data).appendTo("#resultsArea");
+            }, function (err) {
+                $("#resultsArea").text(JSON.stringify(err));
+            });
+        }
+
+        $("#resultsArea").text(message);
+    });
+});
+</script>
+</body>
+</html>

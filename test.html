@@ -1,0 +1,169 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<HTML>
+<HEAD>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <TITLE> oGrid load data</TITLE>
+    <script type="text/javascript" src="./oGrid.js"></script>
+    <script type="text/javascript" src="./xml2json.js"></script>
+    <script type="text/javascript" src="./JsonXml.js"></script>
+    <script type="text/javascript" src="./datajs-1.1.1.min.js"></script>
+    
+    <link type="text/css" rel="stylesheet" href="oGrid.css" />
+
+	<style type="text/css">
+	    th
+	    {
+            display: table-cell;
+            border-left: 1px solid #ccc;
+            white-space: nowrap;
+            text-align: center;
+	    }
+	    .resize
+	    {
+            height: 20px !important;
+            display: inline;
+            position: relative;
+            overflow: hidden;
+            margin-right: -5px;
+            float: right;
+	    }
+	    .content
+	    {
+            position: relative;
+            overflow: hidden;
+            display: block;
+            cursor: pointer;
+	    }
+	    .gridDiv
+	    {
+            float: left;
+            overflow: auto; 
+	    }
+	</style>
+
+    <SCRIPT language="javascript">
+        var rawData = { "rows": [
+        { "productid": "FI-SW-01", "unitcost": 10.00, "status": "P", "listprice": 36.50, "attr1": "Large", "itemid": "EST-1" },
+        { "productid": "K9-DL-01", "unitcost": 12.00, "status": "P", "listprice": 18.50, "attr1": "Spotted Adult Female", "itemid": "EST-10" },
+        { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 28.50, "attr1": "Venomless", "itemid": "EST-11" },
+        { "productid": "RP-SN-01", "unitcost": 12.00, "status": "P", "listprice": 26.50, "attr1": "Rattleless", "itemid": "EST-12" },
+        { "productid": "RP-LI-02", "unitcost": 12.00, "status": "P", "listprice": 35.50, "attr1": "Green Adult", "itemid": "EST-13" },
+        { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 158.50, "attr1": "Tailless", "itemid": "EST-14" },
+        { "productid": "FL-DSH-01", "unitcost": 12.00, "status": "P", "listprice": 83.50, "attr1": "With tail", "itemid": "EST-15" },
+        { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 63.50, "attr1": "Adult Female", "itemid": "EST-16" },
+        { "productid": "FL-DLH-02", "unitcost": 12.00, "status": "P", "listprice": 89.50, "attr1": "Adult Male", "itemid": "EST-17" },
+        { "productid": "AV-CB-01", "unitcost": 92.00, "status": "P", "listprice": 63.50, "attr1": "Adult Male", "itemid": "EST-18" }
+    ]
+        };
+
+        var dataXml = "<data><rows><productid>FI-SW-01</productid><unitcost>10</unitcost><status>P</status><listprice>36.5</listprice><attr1>Large</attr1><itemid>EST-1</itemid></rows><rows><productid>K9-DL-01</productid><unitcost>12</unitcost><status>P</status><listprice>18.5</listprice><attr1>Spotted Adult Female</attr1><itemid>EST-10</itemid></rows><rows><productid>RP-SN-01</productid><unitcost>12</unitcost><status>P</status><listprice>28.5</listprice><attr1>Venomless</attr1><itemid>EST-11</itemid></rows><rows><productid>RP-SN-01</productid><unitcost>12</unitcost><status>P</status><listprice>26.5</listprice><attr1>Rattleless</attr1><itemid>EST-12</itemid></rows><rows><productid>RP-LI-02</productid><unitcost>12</unitcost><status>P</status><listprice>35.5</listprice><attr1>Green Adult</attr1><itemid>EST-13</itemid></rows><rows><productid>FL-DSH-01</productid><unitcost>12</unitcost><status>P</status><listprice>158.5</listprice><attr1>Tailless</attr1><itemid>EST-14</itemid></rows><rows><productid>FL-DSH-01</productid><unitcost>12</unitcost><status>P</status><listprice>83.5</listprice><attr1>With tail</attr1><itemid>EST-15</itemid></rows><rows><productid>FL-DLH-02</productid><unitcost>12</unitcost><status>P</status><listprice>63.5</listprice><attr1>Adult Female</attr1><itemid>EST-16</itemid></rows><rows><productid>FL-DLH-02</productid><unitcost>12</unitcost><status>P</status><listprice>89.5</listprice><attr1>Adult Male</attr1><itemid>EST-17</itemid></rows><rows><productid>AV-CB-01</productid><unitcost>92</unitcost><status>P</status><listprice>63.5</listprice><attr1>Adult Male</attr1><itemid>EST-18</itemid></rows></data>";
+        var obj;
+        window.onload = function () {
+            grid.onmousemove = dragMove;
+            //obj = new obj4u.oGrid(dataTable);
+            //obj.loadData(rawData);
+            //var col = obj.getColumn('attr1');
+            //col.width = '150px';
+            //col = obj.getColumn('unitcost');
+            //col.align = 'right';
+            //col = obj.getColumn('listprice');
+            //col.align = 'right';
+            //obj.renderData();
+
+            OData.read("http://localhost:12591/api/CostCenter?%24inlinecount=allpages&%24top=10", function (data, response) {
+
+                //success handler
+                alert("success");
+            });
+
+            //var x2js = new X2JS();
+
+            //var x = x2js.xml_str2json(dataXml);
+            //obj = new obj4u.oGrid(dataTable);
+
+            //x.data.rows = sortByKey(x.data.rows, 'productid', "desc");
+
+            //obj.loadData(x.data);
+            //obj.renderData();
+        }
+
+        function insertRow() {
+            obj.insertRow(2);
+            obj.renderData();
+            obj.editRow(2, true);
+        }
+
+        function sortByKey(array, key, order) {
+            return array.sort(function (a, b) {
+                var x = a[key]; var y = b[key];
+                if (order == "asc")
+                    return ((x < y) ? 1 : 0);
+                else
+                    return ((x < y) ? 0 : 1);
+            });
+        }
+
+        var order = "asc";
+        function sort() {
+            //alert(field.value);
+            obj.rows = sortByKey(obj.rows, field.value, order);
+            obj.renderData();
+            if (order == "asc")
+                order = "desc";
+            else
+                order = "asc";
+        }
+
+        var resize = false;
+        var xPos;
+        function dragStart() {
+            xPos = event.clientX;
+            yPos = event.screenY;
+            //alert(xPos + " left " + yPos + " down");
+            var text = this.innerHTML;
+            resize = true;
+            document.onselectstart = function () { return false; };
+            document.onmouseup = dragStop;
+        }
+        function dragMove(event) {
+            if (resize) {
+                var newxPos = event.clientX;
+                newWidth = 80 - (xPos - newxPos);
+                if (newWidth > 33) {
+                    out.innerHTML = xPos + " - " + newxPos + " = " + newWidth + ", " + (160 - newWidth);
+                    t.setAttribute("style", "width:" + newWidth + "px");
+                    grid.setAttribute("style", "width:" + (160 + newWidth) + "px;border: 1px solid #ccc;border-collapse: separate;table-layout: fixed;");
+                }
+            }
+        }
+        function dragStop() {
+            if (resize) {
+                resize = false;
+                document.onselectstart = function () { return true; };
+            }
+        }
+    </SCRIPT>
+</HEAD>
+<BODY>
+    <input type="button" value="insert row" onclick="insertRow();" />
+    <input type="button" value="sort" onclick="sort();" />
+    <input type="text" id="field" value="productid" />
+    <TABLE id="dataTable">
+
+    </TABLE>
+
+    <div class="gridDiv" style="width:240px;">
+    <table id="grid" style="width:240px;border: 1px solid #ccc;border-collapse: separate;table-layout: fixed;">
+        <tr>
+            <th style="width:80px">test</th>
+            <th id="t" style="width:80px" onmousedown="dragStart()" >
+                <span class="resize" style="cursor :col-resize;">&nbsp;</span><div class="content">testaaaa</div></th>
+            <th id="t2" style="width:80px"><div class="content">testaaaa</div></th>
+        </tr>
+    </table>
+    </div>
+    <br />
+    <div id="out"></div>
+</BODY>
+</HTML>
