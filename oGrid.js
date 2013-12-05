@@ -1,5 +1,5 @@
 /*
-* oGrid for pure javascript -  v0.6
+* oGrid for pure javascript -  v0.61
 *
 * Copyright (c) 2013 watson chen (http://code.google.com/p/obj4u/)
 * Dual licensed under the GPL Version 3 licenses.
@@ -58,6 +58,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             }
         }
     }
+
     function addPageCilckEvent(obj, control, pageNum) {
         control.addEventListener("click",
                          function () {
@@ -65,9 +66,10 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
                          },
                          false);
     }
+
     this.acceptChanges = function (dataIndex) {
         if (obj4u.HadValue(dataIndex)) {
-            var rowElement = document.getElementById("row" + dataIndex);
+            var rowElement = getRowElementByID.call(this, "row" + dataIndex);
             var row = this.rows[dataIndex];
             for (var i in rowElement.children) {
                 var cell = rowElement.children[i];
@@ -148,7 +150,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
 
     this.editRow = function (dataIndex, isEdit) {
         if (obj4u.HadValue(dataIndex)) {
-            var rowElement = document.getElementById("row" + dataIndex);
+            var rowElement = getRowElementByID.call(this, "row" + dataIndex);
             var row = this.rows[dataIndex];
             if (isEdit) {
                 if (!row.edit) {
@@ -266,6 +268,15 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             }
         }
         return params;
+    }
+
+    var getRowElementByID = function (id) {
+        var rowCount = this.container.rows.length;
+        for (var i = 1; i < rowCount; ++i) {
+            if (this.container.rows[i].id == id)
+                return this.container.rows[i];
+        }
+        return null;
     }
 
     this.getSelectRows = function () {
@@ -499,7 +510,9 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             }
         }
 
-        this.renderRowHead();
+        if (this.container.rows.length <= 0 || (this.showToolbar && this.container.rows.length <= 1)) {
+            this.renderRowHead();
+        }
 
         var start = this.pageNumber * this.pageSize;
         var last = start + this.pageSize;
@@ -664,11 +677,21 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             var row = this.rows[dataIndex];
             if (row) {
                 if (row.state != "insert") {
+                    var date1 = new Date();
+                    this.onLog(date1.getSeconds() + ":" + date1.getMilliseconds());
                     var res = this.sendAction("remove", null, row);
                     if (res.success) {
+                        var date1 = new Date();
+                        this.onLog(date1.getSeconds() + ":" + date1.getMilliseconds());
                         this.showMessage("remove successed.");
+                        var date1 = new Date();
+                        this.onLog(date1.getSeconds() + ":" + date1.getMilliseconds());
                         this.unselectedRow(this.lastSelectedItem, this.rows[this.lastSelectedItem.dataIndex]);
-                        this.refeshPage();
+                        var self = this;
+                        setTimeout(function () { self.refeshPage(); }, 100);
+                        //this.refeshPage();
+                        //var date1 = new Date();
+                        //this.onLog(date1.getSeconds() + ":" + date1.getMilliseconds());
                         return true;
                     }
                 }
@@ -750,7 +773,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         });
         res = this.onLoadSuccess(res, action);
         if (action == "init" || action == "data")
-            obj.loadData(res);
+            this.loadData(res);
         else {
             return res;
         }
@@ -806,10 +829,12 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         rowElement.className = "selected";
     }
 
-    this.showMessage = function (msg) {
+    this.showMessage = function (msg) {        
         var params = {};
         params.message = msg;
         params.isModal = true;
+        params.top = (this.container.offsetTop + (this.container.offsetHeight / 2) - 50) + "px";
+        params.left = (this.container.offsetLeft + (this.container.offsetWidth / 2) - 100) + "px";
         obj4u.MessageBox(document.body, params);
     }
 

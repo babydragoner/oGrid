@@ -1,7 +1,4 @@
 <?php
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, GET');
-
 
 class Item
 {
@@ -33,16 +30,16 @@ class Item
 			$col = new column("Id", "No");
 			$col->width = "60px";
 			array_push($columns, $col);
-			$col = new column("WebSite", "Your WebSite");
+			$col = new column("WebSite", "WebSite");
 			$col->editor = "text";
 			$col->sortable = true;
 			array_push($columns, $col);
 			$col = new column("Description", "Description");
 			$col->editor = "text";
 			$col->sortable = true;
-			$col->width = "200px";
+			$col->width = "40%";
 			array_push($columns, $col);
-			$col = new column("CreUser", "Your Name");
+			$col = new column("CreUser", "Name");
 			$col->editor = "text";
 			$col->sortable = true;
 			array_push($columns, $col);
