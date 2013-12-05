@@ -41,4 +41,14 @@ class option
     }
 }
 
+class updateObject
+{
+	public $field;
+	public $value;
+    function updateObject($field, $value)
+    {
+        $this->field = $field;
+        $this->value = $value;
+    }
+}
 ?>

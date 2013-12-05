@@ -24,6 +24,7 @@ class DG_Page
 		$CONFIG_DIR = "/home/a7091930/public_html/samples/";
 		require_once($CONFIG_DIR."db/DB_config.php");
 		require_once($CONFIG_DIR."db/DB_Class.php");
+    require_once($CONFIG_DIR."util/Common.php");
 		
 		//if (!empty($fdal))
 		//{
@@ -55,39 +56,34 @@ class DG_Page
 		{
 			$_REQUEST[$this->dal->Foreignkey] = $_REQUEST["forKey"];
 		}
-		
-		if($type == "del")
+		if($type != "init" && $type != "data")
 		{
-			//$jsonStr = stripslashes($_POST['data']);
-			//$obj = json_decode($jsonStr);
-			//$prop = "Description";
-			//$var = $obj->$prop;
-			//print_r("val=$var end");
 			if(isset($_POST['data'])){
 				$jsonStr = stripslashes($_POST['data']);
 				$obj = json_decode($jsonStr);
-				$prop = $this->dal->PrimaryKey;
-				$var = $obj->$prop;
-				//$result = $this->dal->delete($var);
-				print_r("val=$var end");
+				if($type == "del")
+				{
+					$prop = $this->dal->PrimaryKey;
+					$var = $obj->$prop;
+					$result = $this->dal->delete($var);
+				}else if($type == "add"){
+					$result = $this->dal->insert($obj);
+					if ($result == "true"){
+						$res = array();
+						$res["success"] = true;
+						$updateObject = $this->dal->afterSave($obj, false);
+            $updObj = new updateObject($this->dal->PrimaryKey, $this->db->get_insert_id());
+            array_push($updateObject, $updObj);
+						$res["updateObject"] = $updateObject;
+						return $res;
+					}
+				}else if($type == "mod"){
+					$result = $this->dal->update($obj);
+				}
+			}else{
+				$result = "Not data";
 			}
-			//$id = $_REQUEST[$this->dal->PrimaryKey];
-			//$result = $this->dal->delete($id);
-		}else if($type == "add"){
-			//$result = $this->dal->insert();
-			if(isset($_POST['data'])){
-				$jsonStr = stripslashes($_POST['data']);
-				$obj = json_decode($jsonStr);
-				$prop = $this->dal->PrimaryKey;
-				$var = $obj->$prop;
-				//$result = $this->dal->delete($var);
-				print_r("val=$var end");
-			}
-			
-		}else if($type == "mod"){
-			//$result = $this->dal->update();
-			
-		}else if($type == "init"){
+		}else if($type == "init" || $type == "data"){
 			
 			$res = array();
 			
@@ -98,14 +94,9 @@ class DG_Page
 			$res["rows"] = $items;
 			
 			return $res;
-		}else if($type == "qry"){
-
-			$items = $this->dal->getData($_REQUEST);
-
-			return $items;
 		}
 		
-		if($type != "init" && $type != "qry")
+		if($type != "init" && $type != "data")
 		{
 			if ($result == "true"){
 				return array('success'=>true);

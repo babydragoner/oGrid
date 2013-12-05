@@ -32,14 +32,14 @@ interface IDAL
 	    *
 	    * @return 成功回傳 'true', 失敗回傳 錯誤信息
      */
-    public function update();
+    public function update($obj);
     
     /**
 	    * @brief 新增資料，資料從 $_REQUEST 取得，索引名稱需與 資料庫 table 的欄位名稱一致
 	    *
 	    * @return 成功回傳 'true', 失敗回傳 錯誤信息
      */
-    public function insert();
+    public function insert($obj);
     
     /**
 	    * @brief 取得目前資料的總筆數

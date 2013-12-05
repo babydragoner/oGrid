@@ -11,5 +11,27 @@ class DAL_Items extends STDAL
 		
     }
     
+    function DealDefaultData($obj, $isUpdate)
+    {
+        date_default_timezone_set('UTC');
+        if($isUpdate)
+        {
+        }else{
+            $obj->CreDate = date("Y-m-d H:i:s");
+        }
+    }
+    
+    function afterSave($obj, $isUpdate)
+    {
+        $updateObject = array();
+        if($isUpdate)
+        {
+        }else{
+						$updateObject = array();
+            $updObj = new updateObject("CreDate", $obj->CreDate);
+            array_push($updateObject, $updObj);
+        }
+        return $updateObject;
+    }
 }
 ?>

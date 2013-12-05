@@ -76,23 +76,43 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
                     row[cell.field] = val;
                 }
             }
+            var res, action;
             if (row.state == "insert") {
-                this.sendAction("insert", null, row);
+                action = "insert";
                 row.state = "none";
-            } else
-                this.sendAction("update", null, row);
+            } else{
+                action = "update";
+            }
+            res = this.sendAction(action, null, row);
+            if (res) {
+                if (res.success) {
+                    if (res.updateObject) {
+                        for (var i = 0; i < res.updateObject.length; ++i) {
+                            var updObj = res.updateObject[i];
+                            row[updObj.field] = updObj.value;
+                        }
+                    }
+                    //this.onLog(action + " successed.");
+                    this.showMessage(action + " successed.");
+                } else {
+                    this.showMessage(res.msg);
+                }
+            } else {
+                this.showMessage(action + " had error.");
+            }
 
             this.editRow(dataIndex, false);
         }
     }
+
     this.apply = function () {
         var row;
-        if (obj.lastSelectedItem) {
-            var dataIndex = obj.lastSelectedIndex;
-            row = obj.rows[dataIndex];
-            var rowElement = obj.lastSelectedItem;
+        if (this.lastSelectedItem) {
+            var dataIndex = this.lastSelectedIndex;
+            row = this.rows[dataIndex];
+            var rowElement = this.lastSelectedItem;
             if (row.edit) {
-                obj.acceptChanges(dataIndex);
+                this.acceptChanges(dataIndex);
             } else {
                 row = null;
                 this.onLog("please edit row.");
@@ -125,6 +145,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         }
         return row;
     }
+
     this.editRow = function (dataIndex, isEdit) {
         if (obj4u.HadValue(dataIndex)) {
             var rowElement = document.getElementById("row" + dataIndex);
@@ -168,6 +189,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         }
         return col;
     }
+
     this.getDefaultColumn = function () {
         var col = [];
         col.field = "";
@@ -183,6 +205,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         col.editor = "text";
         return col;
     }
+
     this.getBlankRow = function () {
         var obj = this.rows[0];
         var temp = obj.constructor();
@@ -197,6 +220,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         temp.state = "insert";
         return temp;
     }
+
     this.getODataParams = function (params) {
         if (!params)
             params = {};
@@ -219,6 +243,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         }
         return params;
     }
+
     this.getQryParams = function (params) {
         if (this.isOData) {
             return this.getODataParams();
@@ -242,6 +267,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         }
         return params;
     }
+
     this.getSelectRows = function () {
         var selectRows = [];
         for (var i = 0; i < this.rows.length; ++i) {
@@ -251,6 +277,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         }
         return selectRows;
     }
+
     this.getEditor = function (name) {
         if (this.editors[name]) {
             var editor = new this.editors[name];
@@ -379,6 +406,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         }
         this.renderData();
     }
+
     this.renderCell = function (rowElement, row, col) {
         if (col.hidden) {
             return;
@@ -443,6 +471,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         }
         return cell;
     }
+
     this.renderData = function () {
         //this.container.innerHTML = "";
         if (!this.showNavigation) {
@@ -490,6 +519,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             this.renderNavigationFooter(rowElement);
         }
     }
+
     this.renderRowHead = function () {
         //var thead = document.createElement("thead");
         var thead = this.container.insertRow(this.container.rows.length);
@@ -530,6 +560,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
     this.renderNavigationFooter = function (rowElement) {
         this.renderNavigationBar(rowElement);
     }
+
     this.renderNavigationBar = function (rowElement) {
         var td = document.createElement("td");
         td.setAttribute("colspan", this.columns.length);
@@ -593,6 +624,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         td.appendChild(div);
         rowElement.appendChild(td);
     }
+
     this.renderRow = function (rowElement, row) {
         if (!row) {
             this.onLog("row is empty.");
@@ -613,6 +645,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             this.renderCell(rowElement, row, this.columns[i]);
         }
     }
+
     this.renderToolbarHead = function (rowElement) {
         var td = document.createElement("td");
         td.setAttribute("colspan", this.columns.length);
@@ -631,15 +664,19 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             var row = this.rows[dataIndex];
             if (row) {
                 if (row.state != "insert") {
-                    this.sendAction("remove", null, row);
+                    var res = this.sendAction("remove", null, row);
+                    if (res.success) {
+                        this.showMessage("remove successed.");
+                        this.unselectedRow(this.lastSelectedItem, this.rows[this.lastSelectedItem.dataIndex]);
+                        this.refeshPage();
+                        return true;
+                    }
                 }
-                //this.rows.splice(dataIndex, 1);
-                //this.totalRow--;
-                //this.resetRowIndex();
-                this.refeshPage();
             }
         }
+        return false;
     }
+
     this.resetRowIndex = function () {
         for (var i = 0; i < this.rows.length; ++i) {
             this.rows[i].index = i;
@@ -711,9 +748,12 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
             contentType: contentType,
             data: qry
         });
-        res = obj.onLoadSuccess(res, action);
+        res = this.onLoadSuccess(res, action);
         if (action == "init" || action == "data")
             obj.loadData(res);
+        else {
+            return res;
+        }
     }
 
     this.selectRow = function (rowElement, type) {
@@ -764,6 +804,13 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
         row.selected = true;
         rowElement.oldClassName = rowElement.className;
         rowElement.className = "selected";
+    }
+
+    this.showMessage = function (msg) {
+        var params = {};
+        params.message = msg;
+        params.isModal = true;
+        obj4u.MessageBox(document.body, params);
     }
 
     this.updateColumn = function (col) {
@@ -833,7 +880,7 @@ obj4u.oGrid = function oGrid(fcontainer, params) {
     }
 };
 
-obj4u.comboBox = function comboBox(fcontainer, params) {
+obj4u.comboBox = function (fcontainer, params) {
     this.container = fcontainer;
     this.control;
     this.loadUrl;
@@ -939,47 +986,145 @@ obj4u.comboBox = function comboBox(fcontainer, params) {
     //this.init();
 }
 
-obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
+obj4u.Button = function (fcontainer, params) {
+    var container = fcontainer;
+    var obj = this;
+    this.event = new obj4u.EventContorller(this);
+
+    var btn = document.createElement("input");
+    btn.type = "button";
+    btn.className = "btn";
+    if (params) {
+        btn.id = params.id;
+        btn.value = params.caption;
+        this.click_event = params.onclick;
+    }
+    btn.onclick = function () {
+        obj.onclick(obj);
+    };
+    container.appendChild(btn);
+
+    Object.defineProperty(this, "id", {
+        get: function () { return btn.id; },
+        set: function (val) {
+            btn.id = val;
+        }
+    });
+    Object.defineProperty(this, "caption", {
+        get: function () { return btn.value; },
+        set: function (val) {
+            btn.value = val;
+        }
+    });
+    Object.defineProperty(this, "onclick", {
+        get: function () { return this.click_event; },
+        set: function (val) {
+            this.click_event = val;
+        }
+    });
+    Object.defineProperty(this, "enabled", {
+        get: function () { return !btn.disabled; },
+        set: function (val) {
+            btn.disabled = !val;
+        }
+    });
+    this.onclick = function (sender) {
+        sender.click_event.call(sender);
+    };
+}
+
+obj4u.MessageBox = function (fcontainer, params) {
+    var container = fcontainer;
+    var obj = this;
+    if (!params)
+        params = {isModal: true};
+
+    if (params.isModal) {
+        var back = document.createElement("div");
+        back.setAttribute("style", "position: fixed; left: 0; top: 0;z-index:1002;width:100%;height:100%;background:#000;opacity:0.5;filter: alpha(opacity=50);-moz-opacity: 0.5;");
+        back.innerHTML = "&nbsp;";
+        container.appendChild(back);
+    }
+
+    var control = document.createElement("div");
+    control.setAttribute("style", "z-index:1003;padding:5px;text-align:center;border-color: rgba(0,0,0,0.3);position: absolute; border-radius: 6px;background:#fff;box-shadow: 1px 1px 7px 1px rgba(128,128,128,0.3);");
+    if (params.top) {
+        control.style.top = params.top;
+    } else {
+        control.style.top = "20%";
+    }
+    if (params.left) {
+        control.style.left = params.left;
+    } else {
+        control.style.left = "30%";
+    }
+
+    if (params.height) {
+        control.style.height = params.height;
+    } else {
+        control.style.height = "100px";
+    }
+    if (params.width) {
+        control.style.width = params.width;
+    } else {
+        control.style.width = "200px";
+    }
+    var content = document.createElement("div");
+    content.setAttribute("style", "height:60%;width:100%;text-align:center;padding-top:10px;");
+    content.innerHTML = "<span style='top: 20%;'>" + params.message + "</span>";
+    control.appendChild(content);
+
+    var btn = new obj4u.Button(control, { id: "btnClose", caption: "close" });
+    btn.onclick = function (sender) {
+        obj.onClose(sender);
+    };
+
+    container.appendChild(control);
+
+    this.onClose = function () {
+        if (back)
+            container.removeChild(back);
+
+        container.removeChild(control);
+    }
+}
+
+obj4u.Toolbar = function (fcontainer, foGrid, params) {
     var objGrid = foGrid;
     this.container = fcontainer;
     this.container.className = "toolbar";
     this.event = new obj4u.EventContorller(this);
     this.buttons = {};
+    var obj = this;
 
     this.initButton = function () {
         this.buttons.btnEdit = this.addButton("btnEdit", "edit");
         this.buttons.btnApply = this.addButton("btnApply", "apply");
-        this.buttons.btnApply.disabled = true;
+        this.buttons.btnApply.enabled = false;
         this.buttons.btnInsert = this.addButton("btnInsert", "insert");
         this.buttons.btnRemove = this.addButton("btnRemove", "remove");
     }
 
     this.acceptChanges = function (row) {
         if (row.edit) {
-            this.buttons.btnEdit.value = "cancel";
-            this.buttons.btnApply.disabled = false;
-            this.buttons.btnInsert.disabled = true;
-            this.buttons.btnRemove.disabled = true;
+            this.buttons.btnEdit.caption = "cancel";
+            this.buttons.btnApply.enabled = true;
+            this.buttons.btnInsert.enabled = false;
+            this.buttons.btnRemove.enabled = false;
         } else {
-            this.buttons.btnEdit.value = "edit";
-            this.buttons.btnApply.disabled = true;
-            this.buttons.btnInsert.disabled = false;
-            this.buttons.btnRemove.disabled = false;
+            this.buttons.btnEdit.caption = "edit";
+            this.buttons.btnApply.enabled = false;
+            this.buttons.btnInsert.enabled = true;
+            this.buttons.btnRemove.enabled = true;
         }
     }
     this.addButton = function (id, caption) {
-        var obj = this;
-        var btn = document.createElement("input");
-        btn.type = "button";
-        btn.id = id;
-        btn.className = "btn";
-        btn.value = caption;
-        btn.onclick = function () {
-            if (obj.onBeforeBtnClick(this)) {
-                obj.btnClick(this);
+        var btn = new obj4u.Button(this.container, { id: id, caption: caption });
+        btn.onclick = function (sender) {
+            if (obj.onBeforeBtnClick(sender)) {
+                obj.btnClick(sender);
             }
         };
-        this.container.appendChild(btn);
         return btn;
     }
 
@@ -1000,6 +1145,7 @@ obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
             this.onCustomBtnClick(btn);
         }
     }
+
     this.edit = function () {
         var row = objGrid.edit();
         if (row) {
@@ -1025,7 +1171,7 @@ obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
         if (objGrid.lastSelectedItem) {
             var dataIndex = objGrid.lastSelectedIndex;
             objGrid.removeRow(dataIndex);
-            objGrid.renderData();
+                //objGrid.renderData();
         } else {
             this.onLog("please select row.");
         }
@@ -1044,7 +1190,7 @@ obj4u.Toolbar = function toolbar(fcontainer, foGrid, params) {
     this.initButton();
 }
 
-obj4u.EventContorller = function EventContorller(fcontrol) {
+obj4u.EventContorller = function (fcontrol) {
     var control = fcontrol;
 
     this.AddEvent = function (eventName, eventObject) {
@@ -1060,7 +1206,7 @@ obj4u.EventContorller = function EventContorller(fcontrol) {
     }
 }
 
-obj4u.Ajax = function Ajax() {
+obj4u.Ajax = function () {
     this.event = new obj4u.EventContorller(this);
 
     this.onLoadSuccess = function (data, xmlhttp) {
@@ -1109,18 +1255,18 @@ obj4u.Ajax = function Ajax() {
     }
 }
 
-obj4u.Clone = function Clone(obj) {
+obj4u.Clone = function (obj) {
     if (obj == null || typeof (obj) != 'object')
         return obj;
 
     var temp = obj.constructor(); // changed
 
     for (var key in obj)
-        temp[key] = Clone(obj[key]);
+        temp[key] = obj4u.Clone(obj[key]);
     return temp;
 }
 
-obj4u.HadValue = function HadValue(obj) {
+obj4u.HadValue = function (obj) {
     if (typeof (obj) === 'number')
         return true;
     else if (typeof (obj) === 'string' && obj == "")

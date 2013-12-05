@@ -31,7 +31,6 @@ class Item
 		{
 			$columns = array();
 			$col = new column("Id", "No");
-			$col->editor = "text";
 			$col->width = "60px";
 			array_push($columns, $col);
 			$col = new column("WebSite", "Your WebSite");
@@ -48,7 +47,6 @@ class Item
 			$col->sortable = true;
 			array_push($columns, $col);
 			$col = new column("CreDate", "The Date");
-			$col->editor = "date";
 			$col->sortable = true;
 			array_push($columns, $col);
 			$result["columns"] = $columns;

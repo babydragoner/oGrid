@@ -27,7 +27,19 @@ class STDAL implements IDAL
     {
 		
     }
-    
+    function afterSave($obj, $isUpdate)
+    {
+      $updateObject = array();
+      return $updateObject;
+    }
+    function CheckData($obj, $isUpdate)
+    {
+      $this->DealDefaultData($obj, $isUpdate);
+      return true;
+    }
+    function DealDefaultData($obj, $isUpdate)
+    {
+    }
     
     /** del row */
     function setDB($fdb)
@@ -43,9 +55,12 @@ class STDAL implements IDAL
     }
     
     
-    function update()
+    function update($obj)
     {
-		$PK = $_REQUEST[$this->PrimaryKey];
+    $this->CheckData($obj, true);
+		$prop = $this->PrimaryKey;
+		$PK = $obj->$prop;
+		//$PK = $_REQUEST[$this->PrimaryKey];
 		$fields = $this->db->get_Fields($this->tablename);
 		$fcount = count($fields);
 		$set = "";
@@ -54,11 +69,11 @@ class STDAL implements IDAL
 			if($fields[$i] != $this->PrimaryKey)
 			{
 				$f = $fields[$i];
-				
-				if (!empty($_REQUEST[$f]) ) {
+				$var = $obj->$f;
+				if (!empty($var) ) {
 					if($set != "")
 						$set .= ",";
-					$set .= $f."='".$_REQUEST[$f]."'";
+					$set .= $f."='".$var."'";
 				}
 			}
 		}
@@ -73,8 +88,9 @@ class STDAL implements IDAL
     }
     
     
-    function insert()
+    function insert($obj)
     {
+    $this->CheckData($obj, false);
 		$fields = $this->db->get_Fields($this->tablename);
 		$fcount = count($fields);
 		$set = "";
@@ -84,14 +100,14 @@ class STDAL implements IDAL
 			if($fields[$i] != $this->PrimaryKey)
 			{
 				$f = $fields[$i];
-				
-				if (!empty($_REQUEST[$f]) ) {
+				$var = $obj->$f;
+				if (!empty($var) ) {
 					if($set != ""){
 						$set .= ",";
 						$val .= ",";
 					}
 					$set .= $f;
-					$val .= "'".$_REQUEST[$f]."'";
+					$val .= "'".$var."'";
 				}
 			}
 		}
