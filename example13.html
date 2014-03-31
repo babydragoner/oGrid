@@ -10,20 +10,136 @@
     <script type="text/javascript" src="datepickr.min.js"></script>
     <link rel="stylesheet" type="text/css" href="datepickr.css" />
 
+    <script type="text/javascript" src="./knockout-3.0.0.js"></script>
+
     <SCRIPT language="javascript">
         var obj;
+        var editRow;
         window.onload = function () {
             obj = new obj4u.oGrid(dataTable);
-            //obj.event.AddEvent("onLog", oGrid_Log);
+            obj.event.AddEvent("onBeforeEdit", onBeforeEdit);
             obj.multiSelect = false;
-            obj.loadUrl = 'http://obj4u.com/samples/Items.php';
+            obj.loadUrl = 'http://obj4u.com/samples/Items2.php';
             obj.load("init");
             obj.showToolbar = true;
             obj.renderData();
         }
+        function onBeforeEdit(row) {
+            editRow = row;
+            //this.showMessage(row.Id);
+            var msg = document.getElementById("tempCommon").innerHTML;
+            var params = {};
+            params.message = msg;
+            params.isModal = true;
+            //params.top = (this.container.offsetTop + (this.container.offsetHeight / 2) - 50) + "px";
+            //params.left = (this.container.offsetLeft + (this.container.offsetWidth / 2) - 100) + "px";
+            params.width = "700px";
+            params.width = "250px";
+            var control = new obj4u.EditBox(document.body, params);
+            ko.applyBindings(editRow, control);
+            return false;
+        }
 
+        function onBeforeDone() {
+            obj.acceptChanges(editRow);
+            //var rowElement = obj.getRowElementByID("row" + editRow.index);
+            //obj.renderRow(rowElement, editRow);
+
+            //var row = obj.apply();
+            //if (row) {
+            //    this.acceptChanges(row);
+            //    return true;
+            //}
+            return true;
+        }
         function oGrid_Log(msg) {
             alert(msg);
+        }
+
+        obj4u.EditBox = function (fcontainer, params) {
+            var container = fcontainer;
+            var self = this;
+            if (!params)
+                params = { isModal: true };
+
+            if (typeof (params.isModal) == "undefined") {
+                params.isModal = true;
+            }
+
+            if (params.isModal) {
+                var back = document.createElement("div");
+                back.setAttribute("style", "position: fixed; left: 0; top: 0;z-index:1002;width:100%;height:100%;background:#000;opacity:0.5;filter: alpha(opacity=50);-moz-opacity: 0.5;");
+                back.innerHTML = "&nbsp;";
+                container.appendChild(back);
+            }
+
+            var borderColor = "rgba(93,186,93,1)";
+            if (params.borderColor) {
+                borderColor = params.borderColor;
+            }
+            var backgroundColor = "rgba(250,255,250, 1)";
+            if (params.backgroundColor) {
+                backgroundColor = params.backgroundColor;
+            }
+            var dialog = document.createElement("div");
+            dialog.setAttribute("style", "z-index:1005;width:600px;margin:-8% auto;" +
+                "position: relative; ");
+
+            var control = document.createElement("div");
+            control.setAttribute("style", "padding:5px;text-align:center;border: solid 1px " + borderColor + ";" +
+                "position: relative; border-radius: 6px;background:" + backgroundColor + ";" +
+                "box-shadow: 1px 1px 7px 1px rgba(64,64,64,0.3);");
+            //var control = document.createElement("div");
+            //control.setAttribute("style", "z-index:1003;padding:5px;text-align:center;border-color: rgba(0,0,0,0.3);position: absolute; border-radius: 6px;background:#fff;box-shadow: 1px 1px 7px 1px rgba(128,128,128,0.3);");
+            //if (params.top) {
+            //    control.style.top = params.top;
+            //} else {
+            //    control.style.top = "20%";
+            //}
+            control.style.top = "0%";
+            //if (params.left) {
+            //    control.style.left = params.left;
+            //} else {
+            //    control.style.left = "30%";
+            //}
+
+            if (params.height) {
+                control.style.minHeight = params.height;
+            } else {
+                control.style.minHeight = "100px";
+            }
+            if (params.width) {
+                control.style.minWidth = params.width;
+            } else {
+                control.style.minWidth = "200px";
+            }
+            var content = document.createElement("div");
+            content.setAttribute("style", "height:60%;width:100%;text-align:center;padding-top:10px;");
+            content.innerHTML = params.message;
+            control.appendChild(content);
+
+            var btnOK = new obj4u.Button(control, { id: "btnOK", caption: "OK" });
+            btnOK.onclick = function (sender) {
+                if (onBeforeDone())
+                    self.onClose(sender);
+            };
+
+            var btnCancel = new obj4u.Button(control, { id: "btnCancel", caption: "close" });
+            btnCancel.onclick = function (sender) {
+                self.onClose(sender);
+            };
+
+            dialog.appendChild(control);
+            container.appendChild(dialog);
+
+            self.onClose = function () {
+                if (back)
+                    container.removeChild(back);
+
+                container.removeChild(dialog);
+            }
+
+            return dialog;
         }
     </SCRIPT>
 </HEAD>
@@ -33,5 +149,33 @@
 
     </TABLE>
  
+<div id="tempCommon" style="display: none;">
+    <table width="100%" class="myGrid2">
+        <tr>
+            <td class="resTitle">No:</td>
+            <td align="left">
+                <span data-bind="text: Id" />
+            </td>
+        </tr>
+        <tr>
+            <td class="resTitle">WebSite:</td>
+            <td align="left">
+                <input style="width: 332px" data-bind="value: WebSite" />
+            </td>
+        </tr>
+        <tr>
+            <td class="resTitle">Description:</td>
+            <td align="left">
+                <input style="width: 332px" data-bind="value: Description" />
+            </td>
+        </tr>
+        <tr>
+            <td class="resTitle">Name:</td>
+            <td align="left">
+                <input style="width: 332px" data-bind="value: CreUser" />
+            </td>
+        </tr>
+    </table>
+</div>
 </BODY>
 </HTML>
