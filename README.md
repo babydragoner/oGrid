@@ -5,7 +5,7 @@ oGrid is a pure javascript grid and it's object oriented design.
 
 Home
 
-http://obj4u.com/
+http://o4u.tw/oGridDemo/
 
 Features
 * pure javascript grid.
